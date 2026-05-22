@@ -8,3 +8,7 @@
     Access-Control-Allow-Origin  = "*"
     Access-Control-Allow-Methods = "GET, POST, PUT, PATCH, DELETE, OPTIONS"
     Access-Control-Allow-Headers = "Content-Type, Authorization"
+[[redirects]]
+  from   = "/"
+  to     = "/painel_societario.html"
+  status = 200
