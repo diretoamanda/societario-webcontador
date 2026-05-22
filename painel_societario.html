@@ -1,0 +1,1031 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Painel Societário — WebContador</title>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,wght@0,400;0,700;0,800;1,400&display=swap" rel="stylesheet">
+  <style>
+    * { box-sizing: border-box; }
+    body { margin: 0; padding: 0; }
+    select, input, button { font-family: 'DM Sans', system-ui, sans-serif; }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+
+  <!-- React via CDN — não precisa instalar nada -->
+  <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+  <script type="text/babel">
+    const { useState, useMemo, useEffect, useRef, useCallback } = React;
+/* ═══════════════════════════════════════════════════════════════
+   PAINEL SOCIETÁRIO v11 — ARQUIVO ÚNICO COMPLETO
+   
+   ✅ LOGIN com seleção de usuária + teclado PIN (4 dígitos)
+   ✅ Sessão persistente (não pede login no F5)
+   ✅ Botão Sair no rodapé da sidebar
+   ✅ Log de acesso com alertas fora do horário/feriados
+   ✅ Dashboard com KPIs por responsável
+   ✅ Processos + Movimentações com indicadores de contato
+   ✅ Exportar Excel
+   ✅ Modo claro/escuro
+   
+   ─────────────────────────────────────────────────────────────
+   PARA LIGAR O BACKEND REAL:
+   Mude a linha abaixo de FALSE para TRUE
+   (só depois de ter feito o deploy no Netlify com as funções)
+   ─────────────────────────────────────────────────────────────  */
+
+const USE_BACKEND = false; // ← MUDE PARA true QUANDO O BACKEND ESTIVER NO AR
+
+/* ═══════════════════════════════════════════════════════════════
+   CONSTANTES
+   ═══════════════════════════════════════════════════════════════ */
+const USERS = ["Amanda", "Sabrina", "Fernanda", "Gabriela", "Yasmin"];
+
+const USER_COLORS = {
+  Amanda:   "#3b82f6",
+  Sabrina:  "#8b5cf6",
+  Fernanda: "#0891b2",
+  Gabriela: "#16a34a",
+  Yasmin:   "#d97706",
+};
+
+const MOCK_PINS = {
+  Amanda:   "1234",
+  Sabrina:  "1234",
+  Fernanda: "1234",
+  Gabriela: "1234",
+  Yasmin:   "1234",
+};
+
+const MOV_TYPES = {
+  constituicao:        { label: "Constituição — entrada",              icon: "🏢" },
+  transf_para_wc:      { label: "Transferência para Web Contador",     icon: "📥" },
+  alteracao:           { label: "Alteração",                           icon: "✏️" },
+  transf_outra_contab: { label: "Transferência p/ outra contabilidade",icon: "📤" },
+  encerramento:        { label: "Encerramento",                        icon: "🔒" },
+  outros:              { label: "Outros",                              icon: "📌" },
+};
+
+const GERAL_STEPS = [
+  { name:"Incluído/alterado — Gestão de Clientes",            resp:"Amanda"   },
+  { name:"Incluído/alterado — Lista transmissão WhatsApp",     resp:"Fernanda" },
+  { name:"Criação de pasta digital em nome da empresa",        resp:"Sabrina"  },
+  { name:"Envio Docs./Cliente",                                resp:"Sabrina"  },
+  { name:"Envio Docs./Prudential",                             resp:"Sabrina"  },
+  { name:"Opção Simples",                                      resp:"Sabrina"  },
+  { name:"Enviado Cobrança societário",                        resp:"Sabrina"  },
+  { name:"Cadastro/alteração SUSEP",                           resp:"Sabrina"  },
+  { name:"Geração de senha prefeitura",                        resp:"Sabrina"  },
+  { name:"Inclusão/Alteração senha na Gestão de Clientes",     resp:"Amanda"   },
+  { name:"Incluído/alterado — Domínio",                        resp:"Yasmin"   },
+  { name:"Procuração ECAC",                                    resp:"Yasmin"   },
+  { name:"Solicitar/Instalar certificado digital",             resp:"Yasmin"   },
+  { name:"Incluir certificado na Domínio",                     resp:"Yasmin"   },
+  { name:"Incluir certificado no Busca-NFS-e",                 resp:"Yasmin"   },
+  { name:"Importar parâmetros",                                resp:"Yasmin"   },
+  { name:"Verificar e cadastrar sócio/responsável",            resp:"Yasmin"   },
+  { name:"Entrega de DCTF",                                    resp:"Gabriela" },
+  { name:"Incluído/alterado — Cadastro Galaxpay",              resp:"Gabriela" },
+  { name:"Atualização planilha de cobrança",                   resp:"Gabriela" },
+  { name:"Enc/Saída — Apuração de débitos contábeis",          resp:"Gabriela" },
+  { name:"Enc/Saída — Enviado E-mail Débitos RFB/Pref.",       resp:"Sabrina"  },
+  { name:"Incluído/alterado — Planilha de Alíquota",           resp:"Sabrina"  },
+  { name:"Incluído/alterado — Planilha de DAS/GPS",            resp:"Sabrina"  },
+  { name:"Conferência",                                        resp:"Amanda"   },
+];
+
+const TROCA_STEPS = [
+  { name:"Incluído/alterado — Gestão de Clientes",             resp:"Amanda"   },
+  { name:"Incluído/alterado — Lista transmissão WhatsApp",      resp:"Fernanda" },
+  { name:"Enc/Saída — Apuração de débitos contábeis",          resp:"Gabriela" },
+  { name:"Verificar entrega de obrigações (DAS, DEFIS...)",    resp:"Sabrina"  },
+  { name:"Alteração transferência Prudential",                  resp:"Sabrina"  },
+  { name:"Enc/Saída — Enviado E-mail Débitos RFB/Pref.",       resp:"Sabrina"  },
+  { name:"Incluído/alterado — Domínio",                        resp:"Yasmin"   },
+  { name:"Incluído/alterado — Planilha de DAS/GPS",            resp:"Yasmin"   },
+  { name:"Entrega de DCTF",                                    resp:"Gabriela" },
+  { name:"Incluído/alterado — Cadastro Galaxpay",              resp:"Gabriela" },
+  { name:"Atualização planilha de cobrança",                   resp:"Gabriela" },
+  { name:"Envio senhas/certificados/documentos para cliente",  resp:"Sabrina"  },
+  { name:"Conferência",                                        resp:"Amanda"   },
+];
+
+/* ── Dados de demonstração ── */
+const CLIENTS_INIT = [
+  { id:"C1", name:"BERITH ORION CORRETORA DE SEGUROS LTDA",      cnpj:"65.723.061/0001-22" },
+  { id:"C2", name:"BM 10 CORRETORA DE SEGUROS DE VIDA LTDA",     cnpj:"17.192.743/0001-03" },
+  { id:"C3", name:"BLUE ROCK PARTICIPACOES LTDA",                cnpj:"65.405.440/0001-74" },
+  { id:"C4", name:"PRIME LAR ENGENHARIA LTDA",                   cnpj:"59.427.360/0001-17" },
+  { id:"C5", name:"NOBRE BRASIL CORRETORA DE SEGUROS LTDA",      cnpj:"53.647.843/0001-40" },
+  { id:"C6", name:"RCS CARNEIRO CONSULTORIA LTDA",               cnpj:"46.618.415/0001-24" },
+];
+
+const mkS = (tmpl, done = 0) =>
+  tmpl.map((s, i) => ({
+    id: i, name: s.name, responsible: s.resp,
+    completedAt:  i < done ? "2026-04-14" : null,
+    completedBy:  i < done ? s.resp : null,
+    notes: "",
+  }));
+
+const PROCS_INIT = [
+  { id:"P003", clientId:"C2", clientName:"BM 10 CORRETORA DE SEGUROS DE VIDA LTDA",
+    cnpj:"17.192.743/0001-03", type:"alteracao", typeLabel:"Alteração Contratual",
+    status:"active", responsible:"Sabrina", startDate:"2026-02-01", obs:"Alteração CNAE",
+    steps:[
+      { id:0, name:"Recebimento de documentos",  responsible:"Sabrina",  completedAt:"2026-02-04", completedBy:"Sabrina",  notes:"" },
+      { id:1, name:"E-mail confirmação alteração",responsible:"Sabrina",  completedAt:"2026-02-05", completedBy:"Sabrina",  notes:"" },
+      { id:2, name:"Pedido de Viabilidade",       responsible:"Sabrina",  completedAt:null,         completedBy:null,        notes:"Aguardando prefeitura" },
+    ],
+  },
+  { id:"P016", clientId:"C4", clientName:"PRIME LAR ENGENHARIA LTDA",
+    cnpj:"59.427.360/0001-17", type:"alteracao", typeLabel:"Alteração Contratual",
+    status:"active", responsible:"Sabrina", startDate:"2026-03-01", obs:"Alteração para Essential",
+    steps:[
+      { id:0, name:"Recebimento de documentos", responsible:"Fernanda", completedAt:"2026-03-04", completedBy:"Fernanda", notes:"" },
+      { id:1, name:"Entrada Junta Comercial",   responsible:"Gabriela", completedAt:null,         completedBy:null,        notes:"Aguardando deferimento", deadlineDate:"2026-03-20" },
+    ],
+  },
+  { id:"P021", clientId:"C6", clientName:"RCS CARNEIRO CONSULTORIA LTDA",
+    cnpj:"46.618.415/0001-24", type:"encerramento", typeLabel:"Encerramento",
+    status:"active", responsible:"Sabrina", startDate:"2026-04-01", obs:"",
+    steps:[
+      { id:0, name:"Recebimento e-mail cliente", responsible:"Sabrina", completedAt:"2026-04-13", completedBy:"Sabrina", notes:"" },
+      { id:1, name:"DBE Encerramento",           responsible:"Amanda",  completedAt:null,         completedBy:null,        notes:"" },
+    ],
+  },
+];
+
+const MOVS_INIT = [
+  { id:"M001", clientId:"C1", clientName:"BERITH ORION CORRETORA DE SEGUROS LTDA",
+    cnpj:"65.723.061/0001-22", tipo:"constituicao", template:"geral",
+    competencia:"04/2026", status:"active", processId:"P011", obs:"",
+    createdAt:"2026-04-13T15:00:00Z", createdBy:"Sabrina", completedAt:null,
+    steps: mkS(GERAL_STEPS, 7),
+  },
+  { id:"M002", clientId:"C6", clientName:"RCS CARNEIRO CONSULTORIA LTDA",
+    cnpj:"46.618.415/0001-24", tipo:"transf_outra_contab", template:"troca_contabilidade",
+    competencia:"04/2026", status:"active", processId:null, obs:"Transferência solicitada",
+    createdAt:"2026-04-10T09:00:00Z", createdBy:"Sabrina", completedAt:null,
+    steps: mkS(TROCA_STEPS, 3),
+  },
+  { id:"M003", clientId:"C3", clientName:"BLUE ROCK PARTICIPACOES LTDA",
+    cnpj:"65.405.440/0001-74", tipo:"alteracao", template:"geral",
+    competencia:"04/2026", status:"active", processId:null, obs:"",
+    createdAt:"2026-04-12T14:30:00Z", createdBy:"Amanda", completedAt:null,
+    steps: mkS(GERAL_STEPS, 12),
+  },
+];
+
+const ACCESS_LOG_INIT = [
+  { id:1, user_name:"Sabrina",  accessed_at:"2026-04-22T09:15:00Z", success:true,  is_outside_hours:false, is_weekend:false, is_holiday:false },
+  { id:2, user_name:"Amanda",   accessed_at:"2026-04-21T08:02:00Z", success:true,  is_outside_hours:false, is_weekend:false, is_holiday:false },
+  { id:3, user_name:"Gabriela", accessed_at:"2026-04-20T19:45:00Z", success:true,  is_outside_hours:true,  is_weekend:false, is_holiday:false },
+  { id:4, user_name:"Fernanda", accessed_at:"2026-04-20T10:30:00Z", success:true,  is_outside_hours:false, is_weekend:true,  is_holiday:false },
+  { id:5, user_name:"Amanda",   accessed_at:"2026-04-19T14:20:00Z", success:false, is_outside_hours:false, is_weekend:false, is_holiday:false },
+];
+
+/* ═══════════════════════════════════════════════════════════════
+   CAMADA DE API — MOCK (false) ou REAL (true)
+   Quando USE_BACKEND for true, chama as Netlify Functions.
+   Quando for false, simula tudo localmente.
+   ═══════════════════════════════════════════════════════════════ */
+const api = {
+  async login(usuario, pin) {
+    if (USE_BACKEND) {
+      const res = await fetch("/.netlify/functions/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ usuario, pin }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.erro || "PIN incorreto");
+      return data;
+    }
+    // Mock: simula delay de rede
+    await new Promise(r => setTimeout(r, 700));
+    if (MOCK_PINS[usuario] !== pin) throw new Error("PIN incorreto");
+    return {
+      token: `demo_${Date.now()}`,
+      usuario,
+      expiresAt: new Date(Date.now() + 12 * 3600000).toISOString(),
+    };
+  },
+
+  getToken() {
+    return sessionStorage.getItem("sToken") || "";
+  },
+
+  async _req(path, opts = {}) {
+    const res = await fetch(`/.netlify/functions${path}`, {
+      ...opts,
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${this.getToken()}`,
+        ...opts.headers,
+      },
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.erro || "Erro");
+    return data;
+  },
+};
+
+/* ═══════════════════════════════════════════════════════════════
+   HELPERS
+   ═══════════════════════════════════════════════════════════════ */
+const fD  = iso => iso ? new Date(iso).toLocaleDateString("pt-BR") : "—";
+const fDT = iso => {
+  const d = new Date(iso);
+  return `${d.toLocaleDateString("pt-BR")} ${d.toLocaleTimeString("pt-BR", { hour:"2-digit", minute:"2-digit" })}`;
+};
+const Pill = ({ bg, c, children }) => (
+  <span style={{ background:bg, color:c, padding:"2px 9px", borderRadius:5, fontSize:11, fontWeight:700, whiteSpace:"nowrap" }}>
+    {children}
+  </span>
+);
+
+/* ═══════════════════════════════════════════════════════════════
+   CORES — FORA DO APP para o Login também usar
+   ═══════════════════════════════════════════════════════════════ */
+const getC = dk => dk ? {
+  bg:"#0b1120", card:"#151e2f", border:"#1e2d42", text:"#f1f5f9", sub:"#94a3b8", muted:"#64748b",
+  accent:"#3b82f6", accentBg:"#172554", input:"#0f172a",
+  green:"#16a34a", greenBg:"#052e16", red:"#ef4444", redBg:"#1f0a0a",
+  amber:"#d97706", amberBg:"#1c1409", purple:"#8b5cf6", purpleBg:"#2e1065",
+  teal:"#0891b2", tealBg:"#0c2f3d",
+} : {
+  bg:"#f0f4f8", card:"#fff", border:"#e2e8f0", text:"#0f172a", sub:"#475569", muted:"#94a3b8",
+  accent:"#3b82f6", accentBg:"#dbeafe", input:"#f8fafc",
+  green:"#16a34a", greenBg:"#dcfce7", red:"#dc2626", redBg:"#fee2e2",
+  amber:"#d97706", amberBg:"#fef9c3", purple:"#7c3aed", purpleBg:"#ede9fe",
+  teal:"#0891b2", tealBg:"#e0f7fa",
+};
+
+/* ═══════════════════════════════════════════════════════════════
+   TELA DE LOGIN
+   ═══════════════════════════════════════════════════════════════ */
+function LoginScreen({ onLogin, dk }) {
+  const C = getC(dk);
+  const [etapa, setEtapa]             = useState("usuario");  // "usuario" | "pin"
+  const [usuarioSel, setUsuarioSel]   = useState(null);
+  const [pin, setPin]                 = useState("");
+  const [erro, setErro]               = useState("");
+  const [loading, setLoading]         = useState(false);
+  const [shake, setShake]             = useState(false);
+
+  const teclas = ["1","2","3","4","5","6","7","8","9","","0","⌫"];
+
+  const pressionarTecla = async (t) => {
+    if (loading) return;
+    if (t === "⌫") { setPin(p => p.slice(0,-1)); setErro(""); return; }
+    if (t === "") return;
+
+    const novoPin = pin + t;
+    setPin(novoPin);
+
+    if (novoPin.length === 4) {
+      setLoading(true);
+      setErro("");
+      try {
+        await onLogin(usuarioSel, novoPin);
+      } catch (e) {
+        setShake(true);
+        setErro(e.message || "PIN incorreto");
+        setPin("");
+        setTimeout(() => setShake(false), 500);
+      } finally {
+        setLoading(false);
+      }
+    }
+  };
+
+  return (
+    <div style={{
+      minHeight:"100vh", background:C.bg, display:"flex",
+      alignItems:"center", justifyContent:"center",
+      fontFamily:"'DM Sans',system-ui,sans-serif", padding:20,
+    }}>
+      <div style={{ width:"100%", maxWidth:400, textAlign:"center" }}>
+        {/* Logo */}
+        <div style={{ marginBottom:32 }}>
+          <div style={{ fontSize:40, marginBottom:8 }}>⚖️</div>
+          <div style={{ fontSize:22, fontWeight:800, color:C.text }}>Painel Societário</div>
+          <div style={{ fontSize:13, color:C.muted, marginTop:4 }}>WebContador</div>
+        </div>
+
+        {/* ETAPA 1: Selecionar usuária */}
+        {etapa === "usuario" && (
+          <div>
+            <div style={{ fontSize:14, color:C.sub, marginBottom:16, fontWeight:600 }}>
+              Quem é você?
+            </div>
+            <div style={{ display:"flex", flexDirection:"column", gap:10 }}>
+              {USERS.map(u => (
+                <button
+                  key={u}
+                  onClick={() => { setUsuarioSel(u); setEtapa("pin"); setPin(""); setErro(""); }}
+                  style={{
+                    display:"flex", alignItems:"center", gap:14,
+                    background:C.card, border:`1.5px solid ${C.border}`,
+                    borderRadius:12, padding:"14px 18px",
+                    cursor:"pointer", color:C.text,
+                    transition:"all .15s",
+                  }}
+                  onMouseOver={e => { e.currentTarget.style.borderColor = USER_COLORS[u]; e.currentTarget.style.transform = "translateX(4px)"; }}
+                  onMouseOut={e => { e.currentTarget.style.borderColor = C.border; e.currentTarget.style.transform = "translateX(0)"; }}
+                >
+                  <div style={{
+                    width:40, height:40, borderRadius:"50%",
+                    background:USER_COLORS[u] + "30",
+                    border:`2px solid ${USER_COLORS[u]}`,
+                    display:"flex", alignItems:"center", justifyContent:"center",
+                    fontSize:16, fontWeight:800, color:USER_COLORS[u],
+                    flexShrink:0,
+                  }}>
+                    {u[0]}
+                  </div>
+                  <span style={{ fontSize:15, fontWeight:700 }}>{u}</span>
+                  <span style={{ marginLeft:"auto", color:C.muted, fontSize:18 }}>›</span>
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* ETAPA 2: Digitar PIN */}
+        {etapa === "pin" && (
+          <div>
+            <button
+              onClick={() => { setEtapa("usuario"); setPin(""); setErro(""); }}
+              style={{ background:"none", border:"none", color:C.sub, fontSize:13, cursor:"pointer", marginBottom:20 }}
+            >
+              ← Trocar usuária
+            </button>
+
+            {/* Avatar da usuária */}
+            <div style={{ marginBottom:24 }}>
+              <div style={{
+                width:64, height:64, borderRadius:"50%",
+                background:USER_COLORS[usuarioSel] + "25",
+                border:`3px solid ${USER_COLORS[usuarioSel]}`,
+                display:"flex", alignItems:"center", justifyContent:"center",
+                fontSize:24, fontWeight:800, color:USER_COLORS[usuarioSel],
+                margin:"0 auto 10px",
+              }}>
+                {usuarioSel?.[0]}
+              </div>
+              <div style={{ fontSize:16, fontWeight:700, color:C.text }}>{usuarioSel}</div>
+              <div style={{ fontSize:12, color:C.muted, marginTop:2 }}>Digite seu PIN de 4 dígitos</div>
+            </div>
+
+            {/* Dots do PIN */}
+            <div style={{
+              display:"flex", justifyContent:"center", gap:14, marginBottom:8,
+              animation: shake ? "shake .4s ease" : "none",
+            }}>
+              {[0,1,2,3].map(i => (
+                <div key={i} style={{
+                  width:18, height:18, borderRadius:"50%",
+                  background: i < pin.length ? USER_COLORS[usuarioSel] : "none",
+                  border: `2px solid ${i < pin.length ? USER_COLORS[usuarioSel] : C.border}`,
+                  transition:"all .15s",
+                  transform: i < pin.length ? "scale(1.1)" : "scale(1)",
+                }}/>
+              ))}
+            </div>
+
+            {erro && (
+              <div style={{ fontSize:12, color:C.red, marginBottom:12, fontWeight:600 }}>
+                {erro}
+              </div>
+            )}
+            {!erro && <div style={{ height:24 }}/>}
+
+            {/* Teclado numérico */}
+            <div style={{
+              display:"grid", gridTemplateColumns:"repeat(3, 1fr)",
+              gap:10, maxWidth:260, margin:"0 auto",
+            }}>
+              {teclas.map((t, i) => (
+                <button
+                  key={i}
+                  onClick={() => pressionarTecla(t)}
+                  disabled={loading || t === ""}
+                  style={{
+                    height:62, borderRadius:12,
+                    fontSize: t === "⌫" ? 20 : 22,
+                    fontWeight:700,
+                    background: t === "" ? "transparent" : C.card,
+                    border: t === "" ? "none" : `1.5px solid ${C.border}`,
+                    color: t === "⌫" ? C.muted : C.text,
+                    cursor: t === "" ? "default" : "pointer",
+                    transition:"all .1s",
+                    opacity: loading ? 0.5 : 1,
+                  }}
+                  onMouseOver={e => { if(t !== "") e.currentTarget.style.borderColor = USER_COLORS[usuarioSel]; }}
+                  onMouseOut={e => { if(t !== "") e.currentTarget.style.borderColor = C.border; }}
+                >
+                  {loading && t === pin[pin.length-1] ? "⟳" : t}
+                </button>
+              ))}
+            </div>
+
+            <div style={{ fontSize:11, color:C.muted, marginTop:20 }}>
+              PIN inicial: <strong>1234</strong> — Sabrina pode trocar para você
+            </div>
+          </div>
+        )}
+
+        <style>{`
+          @keyframes shake {
+            0%,100%{transform:translateX(0)}
+            20%{transform:translateX(-8px)}
+            40%{transform:translateX(8px)}
+            60%{transform:translateX(-6px)}
+            80%{transform:translateX(6px)}
+          }
+        `}</style>
+      </div>
+    </div>
+  );
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   APP PRINCIPAL
+   ═══════════════════════════════════════════════════════════════ */
+function App() {
+  const [dk,              setDk]              = useState(true);
+  const [loggedUser,      setLoggedUser]      = useState(null);   // null = não logado
+  const [sessionReady,    setSessionReady]    = useState(false);  // evita flash de login
+  const [user,            setUser]            = useState("Sabrina");
+  const [view,            setView]            = useState("dashboard");
+  const [procs,           setProcs]           = useState(PROCS_INIT);
+  const [movs,            setMovs]            = useState(MOVS_INIT);
+  const [clients,         setClients]         = useState(CLIENTS_INIT);
+  const [accessLog,       setAccessLog]       = useState(ACCESS_LOG_INIT);
+  const [selRespFilter,   setSelRespFilter]   = useState(null);
+  const [showExport,      setShowExport]      = useState(false);
+  const [showNewMov,      setShowNewMov]      = useState(false);
+  const [editingTemplate, setEditingTemplate] = useState(null);
+  const [toast,           setToast]           = useState(null);
+
+  const C = getC(dk);
+  const fire = m => { setToast(m); setTimeout(() => setToast(null), 2500); };
+
+  /* ── Verificar sessão salva ao abrir o painel ── */
+  useEffect(() => {
+    const token = sessionStorage.getItem("sToken");
+    const usr   = sessionStorage.getItem("sUser");
+    if (token && usr) {
+      setLoggedUser(usr);
+      setUser(usr);
+    }
+    setSessionReady(true);
+  }, []);
+
+  /* ── Handler de login ── */
+  const handleLogin = async (usuario, pin) => {
+    const data = await api.login(usuario, pin);
+    sessionStorage.setItem("sToken", data.token);
+    sessionStorage.setItem("sUser",  data.usuario);
+    sessionStorage.setItem("sExp",   data.expiresAt);
+    setLoggedUser(data.usuario);
+    setUser(data.usuario);
+
+    // Registra no log local de demonstração
+    const agora = new Date();
+    const hora  = agora.getHours();
+    const dia   = agora.getDay();
+    setAccessLog(prev => [{
+      id:              Date.now(),
+      user_name:       data.usuario,
+      accessed_at:     agora.toISOString(),
+      success:         true,
+      is_outside_hours: hora < 8 || hora >= 18,
+      is_weekend:      dia === 0 || dia === 6,
+      is_holiday:      false,
+    }, ...prev]);
+  };
+
+  /* ── Handler de logout ── */
+  const handleLogout = () => {
+    sessionStorage.removeItem("sToken");
+    sessionStorage.removeItem("sUser");
+    sessionStorage.removeItem("sExp");
+    setLoggedUser(null);
+    setView("dashboard");
+  };
+
+  /* ── KPIs por responsável ── */
+  const respKpis = useMemo(() => {
+    const map = {};
+    USERS.forEach(u => { map[u] = { procSteps:0, procIds:[], movSteps:0, movIds:[] }; });
+    procs.filter(p => p.status === "active").forEach(p => {
+      (p.steps||[]).forEach(s => {
+        if (!s.completedAt && map[s.responsible]) {
+          map[s.responsible].procSteps++;
+          if (!map[s.responsible].procIds.includes(p.id)) map[s.responsible].procIds.push(p.id);
+        }
+      });
+    });
+    movs.filter(m => m.status === "active").forEach(m => {
+      m.steps.forEach(s => {
+        if (!s.completedAt && map[s.responsible]) {
+          map[s.responsible].movSteps++;
+          if (!map[s.responsible].movIds.includes(m.id)) map[s.responsible].movIds.push(m.id);
+        }
+      });
+    });
+    return map;
+  }, [procs, movs]);
+
+  /* ── Exportar CSV ── */
+  const exportToExcel = () => {
+    const headers = ["ID","Cliente","CNPJ","Tipo","Competência","Status","Progresso","Criado Por"];
+    const data = movs.map(m => {
+      const done = m.steps.filter(s => s.completedAt).length;
+      return [m.id, m.clientName, m.cnpj || "", (MOV_TYPES[m.tipo]||MOV_TYPES.outros).label,
+              m.competencia, m.status==="completed"?"Concluída":"Em andamento",
+              `${done}/${m.steps.length}`, m.createdBy];
+    });
+    let csv = headers.join(",") + "\n" + data.map(r => r.map(c => `"${c}"`).join(",")).join("\n");
+    const blob = new Blob([csv], { type:"text/csv;charset=utf-8;" });
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = `movimentacoes_${new Date().toISOString().slice(0,10)}.csv`;
+    a.click();
+    fire("📊 Planilha exportada!");
+  };
+
+  /* ── Sidebar button ── */
+  const SB = ({ active, icon, label, color, onClick, badge }) => (
+    <button onClick={onClick} style={{
+      display:"flex", alignItems:"center", gap:7, padding:"7px 13px",
+      background: active ? (dk ? color+"18" : color+"15") : "none",
+      border:"none", color: active ? color : C.sub,
+      fontSize:14, fontWeight: active ? 700 : 400,
+      textAlign:"left",
+      borderLeft: active ? `3px solid ${color}` : "3px solid transparent",
+      width:"100%", cursor:"pointer",
+    }}>
+      <span style={{ fontSize:13 }}>{icon}</span>
+      <span style={{ flex:1 }}>{label}</span>
+      {badge > 0 && <span style={{ fontSize:12, color, fontFamily:"monospace", fontWeight:700 }}>{badge}</span>}
+    </button>
+  );
+
+  /* ══════════════════════════════
+     VIEW: DASHBOARD
+  ══════════════════════════════ */
+  const DashboardView = () => {
+    const myTotal = (respKpis[user]?.procSteps || 0) + (respKpis[user]?.movSteps || 0);
+    const totalPend = Object.values(respKpis).reduce((s,r) => s + r.procSteps + r.movSteps, 0);
+
+    return (
+      <div>
+        <div style={{ marginBottom:20 }}>
+          <h1 style={{ fontSize:22, fontWeight:800, color:C.text, margin:0 }}>🏠 Dashboard</h1>
+          <p style={{ fontSize:13, color:C.sub, margin:"4px 0 0" }}>Olá, {user}! Veja suas pendências de hoje.</p>
+        </div>
+
+        {myTotal > 0 && (
+          <div style={{ background:C.amberBg, border:`2px solid ${C.amber}`, borderRadius:10, padding:"12px 16px", marginBottom:16, display:"flex", alignItems:"center", gap:10 }}>
+            <span style={{ fontSize:22 }}>🔔</span>
+            <div>
+              <div style={{ fontWeight:700, color:C.amber, fontSize:14 }}>Você tem {myTotal} pendência{myTotal>1?"s":""}</div>
+              <div style={{ fontSize:12, color:dk?C.amber:"#92400e", marginTop:2 }}>
+                {respKpis[user]?.movSteps||0} mov. + {respKpis[user]?.procSteps||0} proc. societário
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Cards por responsável */}
+        <div style={{ marginBottom:20 }}>
+          <div style={{ fontSize:11, fontWeight:700, color:C.muted, textTransform:"uppercase", letterSpacing:".06em", marginBottom:8 }}>
+            Pendências por responsável
+          </div>
+          <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit, minmax(190px, 1fr))", gap:10 }}>
+            {USERS.map(u => {
+              const kpi   = respKpis[u];
+              const total = kpi.procSteps + kpi.movSteps;
+              const isMe  = u === user;
+              const cor   = USER_COLORS[u];
+              return (
+                <div key={u}
+                  onClick={() => { if(total>0){ setSelRespFilter(u); setView("tasks"); } }}
+                  style={{ background:C.card, border:`2px solid ${isMe ? cor : C.border}`,
+                    borderRadius:12, padding:"14px 16px",
+                    cursor: total>0 ? "pointer":"default", opacity: total>0 ? 1:0.55, transition:"all .2s" }}
+                  onMouseOver={e => { if(total>0) e.currentTarget.style.transform="translateY(-2px)"; }}
+                  onMouseOut={e => { e.currentTarget.style.transform="translateY(0)"; }}
+                >
+                  <div style={{ display:"flex", justifyContent:"space-between", alignItems:"start", marginBottom:8 }}>
+                    <div>
+                      <div style={{ fontSize:14, fontWeight:700, color:C.text, display:"flex", alignItems:"center", gap:6 }}>
+                        <span style={{ width:8, height:8, borderRadius:"50%", background:cor, flexShrink:0, display:"inline-block" }}/>
+                        {u}
+                        {isMe && <span style={{ fontSize:9, color:cor, fontWeight:700, background:cor+"20", padding:"1px 5px", borderRadius:4 }}>VOCÊ</span>}
+                      </div>
+                    </div>
+                    <div style={{ fontSize:24, fontWeight:800, color:total>0?cor:C.muted, fontFamily:"monospace", lineHeight:1 }}>{total}</div>
+                  </div>
+                  {total>0 ? (
+                    <div style={{ display:"flex", gap:6, flexWrap:"wrap" }}>
+                      {kpi.movSteps>0 && <span style={{ background:C.tealBg, color:C.teal, padding:"2px 7px", borderRadius:5, fontSize:10, fontWeight:700 }}>📋 {kpi.movSteps} mov</span>}
+                      {kpi.procSteps>0 && <span style={{ background:C.purpleBg, color:C.purple, padding:"2px 7px", borderRadius:5, fontSize:10, fontWeight:700 }}>⚖️ {kpi.procSteps} proc</span>}
+                    </div>
+                  ) : (
+                    <div style={{ fontSize:11, color:C.muted, fontStyle:"italic" }}>✅ Em dia</div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Totalizadores */}
+        <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit, minmax(160px, 1fr))", gap:10 }}>
+          {[
+            { label:"Movimentações",    val:movs.length,    sub:`${movs.filter(m=>m.status==="active").length} ativas`,       color:C.teal   },
+            { label:"Processos",        val:procs.length,   sub:`${procs.filter(p=>p.status==="active").length} ativos`,       color:C.purple },
+            { label:"Etapas pendentes", val:totalPend,      sub:"no total",                                                     color:C.amber  },
+            { label:"Base de Clientes", val:clients.length, sub:"empresas",                                                     color:C.accent },
+          ].map(({ label, val, sub, color }) => (
+            <div key={label} style={{ background:C.card, border:`1px solid ${C.border}`, borderRadius:10, padding:"12px 16px" }}>
+              <div style={{ fontSize:11, color:C.muted, fontWeight:600, textTransform:"uppercase" }}>{label}</div>
+              <div style={{ fontSize:24, fontWeight:800, color, fontFamily:"monospace" }}>{val}</div>
+              <div style={{ fontSize:10, color:C.sub }}>{sub}</div>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  };
+
+  /* ══════════════════════════════
+     VIEW: TAREFAS DO RESPONSÁVEL
+  ══════════════════════════════ */
+  const TasksView = () => {
+    if (!selRespFilter) { setView("dashboard"); return null; }
+    const kpi = respKpis[selRespFilter];
+    const tasks = [];
+    procs.filter(p=>p.status==="active").forEach(p => {
+      (p.steps||[]).forEach(s => {
+        if (!s.completedAt && s.responsible===selRespFilter) {
+          tasks.push({ type:"proc", id:p.id, clientName:p.clientName, stepName:s.name, isLate:s.deadlineDate && new Date()>new Date(s.deadlineDate) });
+        }
+      });
+    });
+    movs.filter(m=>m.status==="active").forEach(m => {
+      m.steps.forEach(s => {
+        if (!s.completedAt && s.responsible===selRespFilter) {
+          tasks.push({ type:"mov", id:m.id, clientName:m.clientName, stepName:s.name, competencia:m.competencia });
+        }
+      });
+    });
+    const cor = USER_COLORS[selRespFilter];
+    return (
+      <div>
+        <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:16 }}>
+          <button onClick={() => { setSelRespFilter(null); setView("dashboard"); }} style={{ background:"none", border:"none", color:C.sub, fontSize:14, cursor:"pointer" }}>
+            ← Dashboard
+          </button>
+          <h1 style={{ fontSize:20, fontWeight:800, color:C.text, margin:0 }}>📋 Tarefas — {selRespFilter}</h1>
+        </div>
+        <div style={{ background:C.card, border:`2px solid ${cor}`, borderRadius:10, padding:"12px 16px", marginBottom:16 }}>
+          <div style={{ display:"flex", gap:20 }}>
+            <div><div style={{ fontSize:26, fontWeight:800, color:cor, fontFamily:"monospace" }}>{kpi.procSteps+kpi.movSteps}</div><div style={{ fontSize:11, color:C.muted }}>Total</div></div>
+            <div><div style={{ fontSize:20, fontWeight:700, color:C.teal, fontFamily:"monospace" }}>{kpi.movSteps}</div><div style={{ fontSize:11, color:C.muted }}>Mov.</div></div>
+            <div><div style={{ fontSize:20, fontWeight:700, color:C.purple, fontFamily:"monospace" }}>{kpi.procSteps}</div><div style={{ fontSize:11, color:C.muted }}>Proc.</div></div>
+          </div>
+        </div>
+        <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
+          {tasks.map((t, i) => (
+            <div key={i} onClick={() => setView(t.type==="proc"?"procs":"movs")} style={{
+              background:C.card, border:`1px solid ${t.isLate?C.red:C.border}`,
+              borderLeft:`4px solid ${t.type==="proc"?C.purple:C.teal}`,
+              borderRadius:8, padding:"12px 16px", cursor:"pointer",
+              display:"flex", justifyContent:"space-between", alignItems:"center",
+            }}>
+              <div>
+                <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:4 }}>
+                  <Pill bg={t.type==="proc"?C.purpleBg:C.tealBg} c={t.type==="proc"?C.purple:C.teal}>
+                    {t.type==="proc"?"⚖️":"📋"} {t.id}
+                  </Pill>
+                  <span style={{ fontSize:13, fontWeight:600, color:C.text }}>{t.clientName}</span>
+                  {t.isLate && <Pill bg={C.redBg} c={C.red}>🚨 Atrasada</Pill>}
+                </div>
+                <div style={{ fontSize:12, color:C.sub }}>📝 {t.stepName}</div>
+                {t.competencia && <div style={{ fontSize:11, color:C.muted }}>Comp. {t.competencia}</div>}
+              </div>
+              <span style={{ color:C.sub, fontSize:18 }}>›</span>
+            </div>
+          ))}
+          {tasks.length===0 && <div style={{ padding:40, textAlign:"center", color:C.muted }}>✅ Sem pendências!</div>}
+        </div>
+      </div>
+    );
+  };
+
+  /* ══════════════════════════════
+     VIEW: PROCESSOS
+  ══════════════════════════════ */
+  const ProcessosView = () => (
+    <div>
+      <h1 style={{ fontSize:20, fontWeight:800, color:C.text, marginBottom:4 }}>📁 Processos Societários</h1>
+      <p style={{ fontSize:13, color:C.sub, marginBottom:14 }}>{procs.filter(p=>p.status==="active").length} ativos</p>
+      {procs.map(p => {
+        const pend = (p.steps||[]).filter(s=>!s.completedAt);
+        return (
+          <div key={p.id} style={{ background:C.card, border:`1px solid ${C.border}`, borderRadius:10, padding:"12px 16px", marginBottom:8 }}>
+            <div style={{ display:"flex", justifyContent:"space-between", alignItems:"start" }}>
+              <div style={{ flex:1 }}>
+                <div style={{ display:"flex", alignItems:"center", gap:6, flexWrap:"wrap", marginBottom:4 }}>
+                  <span style={{ fontSize:14, fontWeight:700, color:C.text }}>{p.clientName}</span>
+                  <Pill bg={p.status==="completed"?C.greenBg:C.accentBg} c={p.status==="completed"?C.green:C.accent}>
+                    {p.status==="completed"?"✅ Concluído":"Em andamento"}
+                  </Pill>
+                  {pend.length>0 && <Pill bg={C.amberBg} c={C.amber}>{pend.length} pendente{pend.length>1?"s":""}</Pill>}
+                </div>
+                <div style={{ fontSize:12, color:C.sub, marginBottom:6 }}>{p.id} · {p.typeLabel} · Resp: {p.responsible}</div>
+                {pend.slice(0,2).map((s,i) => (
+                  <div key={i} style={{ fontSize:11, color:s.deadlineDate&&new Date()>new Date(s.deadlineDate)?C.red:C.sub, display:"flex", alignItems:"center", gap:6, marginTop:3 }}>
+                    <span style={{ width:14, height:14, borderRadius:"50%", background:s.deadlineDate&&new Date()>new Date(s.deadlineDate)?C.red:C.accent, color:"#fff", fontSize:8, fontWeight:700, display:"flex", alignItems:"center", justifyContent:"center" }}>
+                      {i+1}
+                    </span>
+                    {s.name} ({s.responsible})
+                    {s.deadlineDate && new Date()>new Date(s.deadlineDate) && <span style={{ color:C.red, fontWeight:700, fontSize:9 }}>🚨</span>}
+                  </div>
+                ))}
+              </div>
+              <span style={{ color:C.sub, fontSize:18 }}>›</span>
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+
+  /* ══════════════════════════════
+     VIEW: MOVIMENTAÇÕES
+  ══════════════════════════════ */
+  const MovimentacoesView = () => (
+    <div>
+      <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:16, flexWrap:"wrap", gap:8 }}>
+        <div>
+          <h1 style={{ fontSize:20, fontWeight:800, color:C.text, margin:0 }}>📋 Movimentações Mensais</h1>
+          <p style={{ fontSize:13, color:C.sub, margin:"2px 0 0" }}>{movs.filter(m=>m.status==="active").length} ativas</p>
+        </div>
+        <div style={{ display:"flex", gap:8 }}>
+          <button onClick={() => setShowExport(true)} style={{ background:C.accent, color:"#fff", border:"none", padding:"8px 14px", borderRadius:7, fontSize:13, fontWeight:700, cursor:"pointer" }}>
+            📊 Exportar Excel
+          </button>
+          <button onClick={() => setShowNewMov(true)} style={{ background:C.teal, color:"#fff", border:"none", padding:"8px 14px", borderRadius:7, fontSize:13, fontWeight:700, cursor:"pointer" }}>
+            + Nova
+          </button>
+        </div>
+      </div>
+
+      {movs.map(m => {
+        const done     = m.steps.filter(s=>s.completedAt).length;
+        const total    = m.steps.length;
+        const pct      = Math.round(done/total*100);
+        const mt       = MOV_TYPES[m.tipo]||MOV_TYPES.outros;
+        const pendentes = m.steps.filter(s=>!s.completedAt);
+        return (
+          <div key={m.id} style={{ background:C.card, border:`1px solid ${C.border}`, borderRadius:9, padding:"12px 16px", marginBottom:8 }}>
+            <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center" }}>
+              <div style={{ flex:1 }}>
+                <div style={{ display:"flex", alignItems:"center", gap:6, flexWrap:"wrap", marginBottom:4 }}>
+                  <span style={{ fontSize:14, fontWeight:700, color:C.text }}>{m.clientName}</span>
+                  <Pill bg={C.tealBg} c={C.teal}>{mt.icon} {mt.label}</Pill>
+                  {pct===100 ? <Pill bg={C.greenBg} c={C.green}>✅ Concluída</Pill>
+                             : <Pill bg={C.accentBg} c={C.accent}>{pct}%</Pill>}
+                </div>
+                <div style={{ fontSize:12, color:C.sub, marginBottom:6 }}>
+                  Comp. {m.competencia} · {done}/{total} etapas · {m.createdBy}
+                </div>
+                {pendentes.slice(0,2).map((s,i) => (
+                  <div key={i} style={{ fontSize:11, color:C.sub, marginTop:3, display:"flex", alignItems:"center", gap:6 }}>
+                    <span style={{ width:14, height:14, borderRadius:"50%", background:C.teal, color:"#fff", fontSize:8, fontWeight:700, display:"flex", alignItems:"center", justifyContent:"center" }}>
+                      {m.steps.indexOf(s)+1}
+                    </span>
+                    {s.name} ({s.responsible})
+                  </div>
+                ))}
+                {pendentes.length>2 && <div style={{ fontSize:11, color:C.muted, marginTop:2, fontStyle:"italic" }}>... e mais {pendentes.length-2}</div>}
+              </div>
+              <div style={{ textAlign:"right", minWidth:55 }}>
+                <div style={{ fontSize:18, fontWeight:800, color:pct===100?C.green:C.teal, fontFamily:"monospace" }}>{pct}%</div>
+                <div style={{ width:46, height:4, background:C.border, borderRadius:2, marginTop:3 }}>
+                  <div style={{ width:`${pct}%`, height:"100%", background:pct===100?C.green:C.teal, borderRadius:2 }}/>
+                </div>
+              </div>
+            </div>
+          </div>
+        );
+      })}
+
+      {/* Modal exportar */}
+      {showExport && (
+        <div style={{ position:"fixed", inset:0, background:"rgba(0,0,0,.85)", display:"flex", alignItems:"center", justifyContent:"center", zIndex:60, padding:14 }}>
+          <div style={{ background:C.card, border:`1px solid ${C.border}`, borderRadius:14, padding:22, width:"100%", maxWidth:420 }}>
+            <div style={{ display:"flex", justifyContent:"space-between", marginBottom:16 }}>
+              <h2 style={{ fontSize:18, fontWeight:800, color:C.text, margin:0 }}>📊 Exportar</h2>
+              <button onClick={() => setShowExport(false)} style={{ background:"none", border:"none", color:C.muted, fontSize:18, cursor:"pointer" }}>✕</button>
+            </div>
+            <button onClick={() => { setShowExport(false); exportToExcel(); }} style={{ width:"100%", background:C.accent, color:"#fff", border:"none", padding:"14px", borderRadius:8, fontSize:14, fontWeight:700, cursor:"pointer" }}>
+              📊 Baixar planilha CSV
+            </button>
+            <div style={{ fontSize:11, color:C.muted, marginTop:10, textAlign:"center" }}>Compatível com Excel e Google Sheets</div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal nova movimentação */}
+      {showNewMov && (
+        <div style={{ position:"fixed", inset:0, background:"rgba(0,0,0,.85)", display:"flex", alignItems:"center", justifyContent:"center", zIndex:60, padding:14 }}>
+          <div style={{ background:C.card, border:`1px solid ${C.border}`, borderRadius:14, padding:22, width:"100%", maxWidth:480 }}>
+            <div style={{ display:"flex", justifyContent:"space-between", marginBottom:16 }}>
+              <h2 style={{ fontSize:18, fontWeight:800, color:C.text, margin:0 }}>📋 Nova Movimentação</h2>
+              <button onClick={() => setShowNewMov(false)} style={{ background:"none", border:"none", color:C.muted, fontSize:18, cursor:"pointer" }}>✕</button>
+            </div>
+            <div style={{ marginBottom:12 }}>
+              <label style={{ fontSize:12, fontWeight:700, color:C.muted, display:"block", marginBottom:6 }}>Cliente</label>
+              <select style={{ width:"100%", padding:"8px 12px", background:C.input, border:`1px solid ${C.border}`, borderRadius:7, color:C.text, fontSize:13 }}>
+                {clients.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+              </select>
+            </div>
+            <div style={{ display:"grid", gridTemplateColumns:"1fr 110px", gap:10, marginBottom:16 }}>
+              <div>
+                <label style={{ fontSize:12, fontWeight:700, color:C.muted }}>Tipo</label>
+                <select style={{ width:"100%", padding:"8px 12px", background:C.input, border:`1px solid ${C.border}`, borderRadius:7, color:C.text, fontSize:13, marginTop:4 }}>
+                  {Object.entries(MOV_TYPES).map(([k,v]) => <option key={k} value={k}>{v.icon} {v.label}</option>)}
+                </select>
+              </div>
+              <div>
+                <label style={{ fontSize:12, fontWeight:700, color:C.muted }}>Competência</label>
+                <input defaultValue="04/2026" style={{ width:"100%", padding:"8px 12px", background:C.input, border:`1px solid ${C.border}`, borderRadius:7, color:C.text, fontSize:13, marginTop:4 }}/>
+              </div>
+            </div>
+            <button onClick={() => { setShowNewMov(false); fire("📋 Movimentação criada! (demonstração)"); }} style={{ width:"100%", background:C.teal, color:"#fff", border:"none", padding:"12px", borderRadius:8, fontSize:14, fontWeight:700, cursor:"pointer" }}>
+              Criar Movimentação
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+
+  /* ══════════════════════════════
+     VIEW: LOG DE ACESSO (só Sabrina)
+  ══════════════════════════════ */
+  const AccessLogView = () => {
+    const suspeitos = accessLog.filter(r => r.is_outside_hours || r.is_weekend || r.is_holiday);
+    return (
+      <div>
+        <h1 style={{ fontSize:20, fontWeight:800, color:C.text, marginBottom:4 }}>🔐 Log de Acesso</h1>
+        <p style={{ fontSize:13, color:C.sub, marginBottom:14 }}>Histórico de quem acessou o painel e quando</p>
+
+        {suspeitos.length>0 && (
+          <div style={{ background:C.redBg, border:`2px solid ${C.red}`, borderRadius:10, padding:"12px 16px", marginBottom:16 }}>
+            <div style={{ fontWeight:700, color:C.red, fontSize:14, marginBottom:6 }}>⚠️ {suspeitos.length} acesso{suspeitos.length>1?"s":""} fora do horário</div>
+            {suspeitos.map(r => (
+              <div key={r.id} style={{ fontSize:12, color:C.red, marginTop:3 }}>
+                {r.user_name} em {fDT(r.accessed_at)}
+                {r.is_outside_hours&&" · fora do horário"}
+                {r.is_weekend&&" · fim de semana"}
+                {r.is_holiday&&" · feriado"}
+              </div>
+            ))}
+          </div>
+        )}
+
+        <div style={{ display:"flex", flexDirection:"column", gap:6 }}>
+          {accessLog.map(r => {
+            const suspeito = r.is_outside_hours || r.is_weekend || r.is_holiday;
+            const cor = USER_COLORS[r.user_name] || C.muted;
+            return (
+              <div key={r.id} style={{ background:C.card, border:`1px solid ${suspeito?C.red:C.border}`, borderRadius:8, padding:"10px 14px", display:"flex", alignItems:"center", gap:12 }}>
+                <div style={{ width:34, height:34, borderRadius:"50%", background:cor+"25", border:`2px solid ${cor}`, display:"flex", alignItems:"center", justifyContent:"center", fontSize:13, fontWeight:800, color:cor, flexShrink:0 }}>
+                  {r.user_name?.[0]}
+                </div>
+                <div style={{ flex:1 }}>
+                  <div style={{ fontSize:13, fontWeight:700, color:C.text }}>{r.user_name}</div>
+                  <div style={{ fontSize:11, color:C.sub }}>{fDT(r.accessed_at)}</div>
+                </div>
+                <div style={{ textAlign:"right" }}>
+                  {!r.success && <Pill bg={C.redBg} c={C.red}>PIN errado</Pill>}
+                  {r.is_outside_hours && <Pill bg={C.amberBg} c={C.amber}>Fora hora</Pill>}
+                  {r.is_weekend && <Pill bg={C.amberBg} c={C.amber}>Fim sem.</Pill>}
+                  {r.is_holiday && <Pill bg={C.redBg} c={C.red}>Feriado</Pill>}
+                  {!suspeito && r.success && <Pill bg={C.greenBg} c={C.green}>Normal</Pill>}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    );
+  };
+
+  /* ══════════════════════════════
+     RENDERIZAÇÃO PRINCIPAL
+  ══════════════════════════════ */
+
+  // Enquanto verifica a sessão, não renderiza nada (evita flash)
+  if (!sessionReady) return null;
+
+  // Se não está logado, mostra a tela de login
+  if (!loggedUser) return <LoginScreen onLogin={handleLogin} dk={dk} />;
+
+  // App principal
+  return (
+    <div style={{ fontFamily:"'DM Sans',system-ui,sans-serif", background:C.bg, color:C.text, height:"100vh", display:"flex", overflow:"hidden" }}>
+      {/* ── Sidebar ── */}
+      <div style={{ width:220, background:dk?"#0a0f1a":"#fff", borderRight:`1px solid ${C.border}`, display:"flex", flexDirection:"column", flexShrink:0 }}>
+        {/* Header */}
+        <div style={{ padding:"14px 12px 8px", borderBottom:`1px solid ${C.border}` }}>
+          <div style={{ fontSize:17, fontWeight:800, color:C.text }}>⚖️ WebContador</div>
+          <div style={{ fontSize:11, color:C.muted }}>Painel Societário v11</div>
+        </div>
+
+        {/* Nav */}
+        <div style={{ padding:"6px 0", flex:1, overflowY:"auto" }}>
+          <div style={{ fontSize:9, fontWeight:700, color:C.muted, padding:"8px 12px 2px", textTransform:"uppercase", letterSpacing:".08em" }}>Dashboard</div>
+          <SB active={view==="dashboard"} icon="🏠" label="Visão Geral"    color={C.accent} onClick={() => setView("dashboard")} />
+          {selRespFilter && (
+            <SB active={view==="tasks"} icon="📋" label={`${selRespFilter}`} color={C.amber}
+              onClick={() => setView("tasks")}
+              badge={(respKpis[selRespFilter]?.procSteps||0)+(respKpis[selRespFilter]?.movSteps||0)} />
+          )}
+          <div style={{ fontSize:9, fontWeight:700, color:C.muted, padding:"8px 12px 2px", textTransform:"uppercase", letterSpacing:".08em" }}>Societário</div>
+          <SB active={view==="procs"} icon="📁" label="Processos"    color={C.purple} onClick={() => setView("procs")}  badge={procs.filter(p=>p.status==="active").length} />
+          <div style={{ fontSize:9, fontWeight:700, color:C.muted, padding:"8px 12px 2px", textTransform:"uppercase", letterSpacing:".08em" }}>Mov. Mensal</div>
+          <SB active={view==="movs"} icon="📋" label="Movimentações" color={C.teal}   onClick={() => setView("movs")}   badge={movs.filter(m=>m.status==="active").length} />
+          {/* Log de acesso — só para Sabrina */}
+          {loggedUser === "Sabrina" && (
+            <>
+              <div style={{ fontSize:9, fontWeight:700, color:C.muted, padding:"8px 12px 2px", textTransform:"uppercase", letterSpacing:".08em" }}>Administração</div>
+              <SB active={view==="log"} icon="🔐" label="Log de Acesso" color={C.red} onClick={() => setView("log")}
+                badge={accessLog.filter(r=>r.is_outside_hours||r.is_weekend||r.is_holiday).length} />
+            </>
+          )}
+        </div>
+
+        {/* Footer com usuário logado + sair */}
+        <div style={{ padding:"8px 12px", borderTop:`1px solid ${C.border}` }}>
+          {/* Usuário logado */}
+          <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:8 }}>
+            <div style={{ width:28, height:28, borderRadius:"50%", background:USER_COLORS[loggedUser]+"30", border:`2px solid ${USER_COLORS[loggedUser]}`, display:"flex", alignItems:"center", justifyContent:"center", fontSize:12, fontWeight:800, color:USER_COLORS[loggedUser] }}>
+              {loggedUser?.[0]}
+            </div>
+            <div>
+              <div style={{ fontSize:12, fontWeight:700, color:C.text }}>{loggedUser}</div>
+              <div style={{ fontSize:10, color:C.muted }}>logada agora</div>
+            </div>
+          </div>
+
+          <button onClick={() => setDk(!dk)} style={{ width:"100%", padding:"4px", background:"none", border:`1px solid ${C.border}`, borderRadius:4, color:C.muted, fontSize:11, cursor:"pointer", marginBottom:4 }}>
+            {dk ? "☀️ Modo claro" : "🌙 Modo escuro"}
+          </button>
+
+          {/* Botão Sair */}
+          <button onClick={handleLogout} style={{ width:"100%", padding:"6px", background:C.redBg, border:`1px solid ${C.red}30`, borderRadius:6, color:C.red, fontSize:12, fontWeight:700, cursor:"pointer" }}>
+            🚪 Sair
+          </button>
+        </div>
+      </div>
+
+      {/* ── Conteúdo principal ── */}
+      <div style={{ flex:1, padding:"18px 22px", overflowY:"auto" }}>
+        {view==="dashboard" && <DashboardView/>}
+        {view==="tasks"     && <TasksView/>}
+        {view==="procs"     && <ProcessosView/>}
+        {view==="movs"      && <MovimentacoesView/>}
+        {view==="log"       && <AccessLogView/>}
+      </div>
+
+      {/* Toast */}
+      {toast && (
+        <div style={{ position:"fixed", bottom:18, left:"50%", transform:"translateX(-50%)", background:C.green, color:"#fff", padding:"8px 20px", borderRadius:8, fontSize:12, fontWeight:700, zIndex:100 }}>
+          {toast}
+        </div>
+      )}
+    </div>
+  );
+}
+
+    // Inicializa o React
+    const root = ReactDOM.createRoot(document.getElementById('root'));
+    root.render(<App />);
+  </script>
+</body>
+</html>

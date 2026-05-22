@@ -1,0 +1,21 @@
+# ══════════════════════════════════════════════════════════════
+#  netlify.toml — Configuração do projeto Painel Societário
+#  Coloque este arquivo na raiz do projeto
+# ══════════════════════════════════════════════════════════════
+
+[build]
+  functions = "netlify/functions"   # onde ficam as funções backend
+  publish   = "dist"                # onde fica o React compilado (vite build)
+
+# Para desenvolvimento local com `netlify dev`
+[dev]
+  port       = 8888    # porta do Netlify Dev (acessa o painel aqui)
+  targetPort = 5173    # porta do Vite (seu servidor React)
+
+# CORS: permite que o React chame as funções
+[[headers]]
+  for = "/.netlify/functions/*"
+  [headers.values]
+    Access-Control-Allow-Origin  = "*"
+    Access-Control-Allow-Methods = "GET, POST, PUT, PATCH, DELETE, OPTIONS"
+    Access-Control-Allow-Headers = "Content-Type, Authorization"
