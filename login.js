@@ -1,86 +1,100 @@
 // ══════════════════════════════════════════════════════════════
-//  netlify/functions/login.js
+//  netlify/functions/login.js — versão simplificada
+//  Valida o PIN via variáveis de ambiente (sem SDK do Supabase)
 //  POST /.netlify/functions/login
-//  Body: { usuario: "Sabrina", pin: "1234" }
-//  Retorna: { token, usuario, expiresAt }
+//  Body: { usuario: "Amanda", pin: "2026" }
 // ══════════════════════════════════════════════════════════════
 
-const {
-  supabase, ok, err, preflight,
-  PINS, gerarToken, classificarAcesso,
-} = require("./_helpers");
+const CORS = {
+  "Access-Control-Allow-Origin":  "*",
+  "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
+  "Access-Control-Allow-Headers": "Content-Type, Authorization",
+  "Content-Type":                 "application/json",
+};
+
+const PINS = () => ({
+  Amanda:   process.env.PIN_AMANDA,
+  Ricardo:  process.env.PIN_RICARDO,
+  Sabrina:  process.env.PIN_SABRINA,
+  Fernanda: process.env.PIN_FERNANDA,
+  Gabriela: process.env.PIN_GABRIELA,
+  Yasmin:   process.env.PIN_YASMIN,
+});
 
 exports.handler = async (event) => {
-  // Responde ao preflight do CORS
-  if (event.httpMethod === "OPTIONS") return preflight();
-  if (event.httpMethod !== "POST")    return err("Método não permitido", 405);
+  // CORS preflight
+  if (event.httpMethod === "OPTIONS") {
+    return { statusCode: 204, headers: CORS, body: "" };
+  }
 
-  // ── Parse do body ──
+  if (event.httpMethod !== "POST") {
+    return { statusCode: 405, headers: CORS, body: JSON.stringify({ erro: "Método não permitido" }) };
+  }
+
   let usuario, pin;
   try {
-    ({ usuario, pin } = JSON.parse(event.body));
+    ({ usuario, pin } = JSON.parse(event.body || "{}"));
   } catch {
-    return err("Body inválido");
+    return { statusCode: 400, headers: CORS, body: JSON.stringify({ erro: "Body inválido" }) };
   }
 
-  if (!usuario || !pin) return err("Usuário e PIN são obrigatórios");
-
-  // ── Validação do PIN (acontece no servidor — nunca no browser) ──
-  const pinCorreto = PINS[usuario];
-  if (!pinCorreto) return err("Usuário não encontrado", 404);
-  if (pinCorreto !== String(pin)) {
-    // Registra tentativa falha no Supabase para auditoria
-    await supabase.from("access_log").insert({
-      user_name:    usuario,
-      accessed_at:  new Date().toISOString(),
-      success:      false,
-      ip_address:   event.headers["x-forwarded-for"] || "desconhecido",
-      user_agent:   event.headers["user-agent"] || "",
-    }).catch(() => {}); // ignora erro de log para não bloquear a resposta
-
-    return err("PIN incorreto", 401);
+  if (!usuario || !pin) {
+    return { statusCode: 400, headers: CORS, body: JSON.stringify({ erro: "Usuário e PIN obrigatórios" }) };
   }
 
-  // ── Classifica o acesso (hora, dia, feriado) ──
-  const acesso = classificarAcesso();
+  const pins = PINS();
+  const pinCorreto = pins[usuario];
 
-  // ── Registra acesso bem-sucedido no Supabase ──
-  await supabase.from("access_log").insert({
-    user_name:        usuario,
-    accessed_at:      acesso.acessadoEm,
-    success:          true,
-    is_outside_hours: acesso.foraDoHorario,
-    is_weekend:       acesso.fimDeSemana,
-    is_holiday:       acesso.feriado,
-    ip_address:       event.headers["x-forwarded-for"] || "desconhecido",
-    user_agent:       event.headers["user-agent"] || "",
-  }).catch(() => {});
+  // Usuário não encontrado
+  if (!pinCorreto) {
+    return { statusCode: 404, headers: CORS, body: JSON.stringify({ erro: "Usuário não encontrado" }) };
+  }
 
-  // ── Dispara alerta se acesso suspeito ──
-  if (acesso.suspeito && process.env.POWER_AUTOMATE_WEBHOOK_URL) {
-    const motivos = [
-      acesso.foraDoHorario && "fora do horário comercial",
-      acesso.fimDeSemana   && "fim de semana",
-      acesso.feriado       && "feriado",
-    ].filter(Boolean).join(", ");
+  // PIN incorreto
+  if (String(pin) !== String(pinCorreto)) {
+    return { statusCode: 401, headers: CORS, body: JSON.stringify({ erro: "PIN incorreto" }) };
+  }
 
-    // Chama webhook do Power Automate em background (não bloqueia o login)
-    fetch(process.env.POWER_AUTOMATE_WEBHOOK_URL, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
+  // ── Login válido — registra acesso via REST API (sem SDK) ──
+  const agora       = new Date();
+  const hora        = agora.getHours();
+  const dia         = agora.getDay();
+  const foraHorario = hora < 8 || hora >= 18;
+  const fimSemana   = dia === 0 || dia === 6;
+
+  // Registra no Supabase via fetch (sem precisar do SDK)
+  const SB_URL = process.env.SUPABASE_URL;
+  const SB_KEY = process.env.SUPABASE_SERVICE_KEY;
+  if (SB_URL && SB_KEY) {
+    fetch(`${SB_URL}/rest/v1/access_log`, {
+      method:  "POST",
+      headers: {
+        apikey:         SB_KEY,
+        Authorization:  `Bearer ${SB_KEY}`,
+        "Content-Type": "application/json",
+        Prefer:         "return=minimal",
+      },
       body: JSON.stringify({
-        assunto:  `⚠️ Acesso suspeito — Painel Societário`,
-        mensagem: `O usuário ${usuario} acessou o painel em ${new Date(acesso.acessadoEm).toLocaleString("pt-BR")} (${motivos}).`,
-        usuario,
-        acessadoEm: acesso.acessadoEm,
-        motivos,
+        user_name:        usuario,
+        accessed_at:      agora.toISOString(),
+        success:          true,
+        is_outside_hours: foraHorario,
+        is_weekend:       fimSemana,
+        is_holiday:       false,
+        ip_address:       event.headers["x-forwarded-for"] || "desconhecido",
+        user_agent:       event.headers["user-agent"] || "",
       }),
-    }).catch(() => {});
+    }).catch(() => {}); // não bloqueia o login se o log falhar
   }
 
-  // ── Gera token e retorna ──
-  const token = gerarToken(usuario);
-  const expiresAt = new Date(Date.now() + 12 * 60 * 60 * 1000).toISOString();
-
-  return ok({ token, usuario, expiresAt, acessoSuspeito: acesso.suspeito });
+  return {
+    statusCode: 200,
+    headers: CORS,
+    body: JSON.stringify({
+      ok:       true,
+      usuario,
+      token:    `session_${usuario}_${Date.now()}`,
+      expiresAt: new Date(Date.now() + 12 * 3600000).toISOString(),
+    }),
+  };
 };
