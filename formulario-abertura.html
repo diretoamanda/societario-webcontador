@@ -1,0 +1,790 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<title>Abertura de Empresa — WebContador</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚖️</text></svg>">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700;9..40,800&display=swap" rel="stylesheet">
+<style>
+/* ══════════════════════════════════════════════════════════════
+   FORMULÁRIO DE ABERTURA v2 — WebContador
+   Cores da marca: Azul #1a3068  |  Verde #6eba2e
+   ══════════════════════════════════════════════════════════════ */
+:root {
+  --brand-blue: #1a3068;
+  --brand-green: #6eba2e;
+  --brand-green-light: #e8f5d8;
+  --brand-green-dark: #5a9e24;
+  --brand-blue-light: #e4eaf5;
+  --bg: #f4f6f9;
+  --card: #ffffff;
+  --border: #dfe4ea;
+  --border-focus: #6eba2e;
+  --text: #1a202c;
+  --text-sec: #4a5568;
+  --text-muted: #94a3b8;
+  --error: #dc2626;
+  --error-light: #fef2f2;
+  --radius: 14px;
+  --radius-sm: 10px;
+  --shadow: 0 2px 8px rgba(26,48,104,.06);
+  --font: 'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth;-webkit-text-size-adjust:100%}
+body{font-family:var(--font);background:var(--bg);color:var(--text);line-height:1.6;min-height:100vh;-webkit-font-smoothing:antialiased}
+
+.wrap{max-width:620px;margin:0 auto;padding:20px 16px 100px}
+
+/* ── Header ─────────────────────────────────────── */
+.hdr{text-align:center;padding:32px 16px 24px}
+.hdr-logo{height:58px;margin-bottom:14px;object-fit:contain}
+.hdr-fb{display:none;align-items:center;justify-content:center;gap:6px;margin-bottom:14px}
+.hdr-fb .mk{font-size:22px;font-weight:800;color:var(--brand-blue);letter-spacing:-.02em}
+.hdr-fb .mk span{color:var(--brand-green)}
+.hdr h1{font-size:22px;font-weight:800;color:var(--brand-blue);letter-spacing:-.03em;margin-bottom:2px}
+.hdr .sub{font-size:14px;color:var(--text-sec);font-weight:500}
+.hdr .tag{display:inline-block;margin-top:14px;padding:7px 18px;background:var(--brand-green-light);color:var(--brand-green-dark);border-radius:22px;font-size:13px;font-weight:700}
+
+/* ── Progress ───────────────────────────────────── */
+.prog{position:sticky;top:0;z-index:100;background:rgba(255,255,255,.94);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border-bottom:1px solid var(--border);padding:14px 16px;margin:0 -16px 20px}
+.prog-dots{display:flex;gap:6px;align-items:center;justify-content:center;max-width:380px;margin:0 auto}
+.prog-dot{width:11px;height:11px;border-radius:50%;background:var(--border);transition:all .25s;flex-shrink:0}
+.prog-dot.on{background:var(--brand-green);transform:scale(1.35);box-shadow:0 0 0 4px rgba(110,186,46,.18)}
+.prog-dot.ok{background:var(--brand-blue)}
+.prog-ln{flex:1;height:2px;background:var(--border);transition:background .25s}
+.prog-ln.ok{background:var(--brand-blue)}
+.prog-lbl{text-align:center;font-size:12px;font-weight:600;color:var(--text-sec);margin-top:7px}
+
+/* ── Card ───────────────────────────────────────── */
+.card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:26px 22px;margin-bottom:14px;box-shadow:var(--shadow);animation:up .35s ease both}
+.card.socio{border-left:4px solid var(--brand-blue)}
+.card.socio:nth-child(even){border-left-color:var(--brand-green)}
+.card-title{font-size:17px;font-weight:800;color:var(--text);margin-bottom:2px;display:flex;align-items:center;gap:9px}
+.card-title .ic{font-size:20px}
+.card-sub{font-size:13px;color:var(--text-muted);margin-bottom:22px}
+
+/* ── Fields ─────────────────────────────────────── */
+.fg{margin-bottom:18px}
+.fg.hidden{display:none}
+.fl{display:block;font-size:14px;font-weight:600;color:var(--text);margin-bottom:5px}
+.fl .req{color:var(--error);margin-left:2px}
+.fl .opt{font-weight:400;color:var(--text-muted);font-size:12px;margin-left:4px}
+.fi,.fs,.ft{width:100%;padding:12px 14px;font-family:var(--font);font-size:16px;color:var(--text);background:var(--card);border:1.5px solid var(--border);border-radius:var(--radius-sm);transition:border .2s,box-shadow .2s;outline:none;-webkit-appearance:none;appearance:none}
+.fi:focus,.fs:focus,.ft:focus{border-color:var(--brand-green);box-shadow:0 0 0 3px rgba(110,186,46,.13)}
+.fi.err,.fs.err{border-color:var(--error);box-shadow:0 0 0 3px rgba(220,38,38,.08)}
+.fi.ok{border-color:var(--brand-green)}
+.ft{resize:vertical;min-height:76px}
+.fs{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='%2394a3b8'%3E%3Cpath d='M4 6l4 4 4-4'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center;padding-right:36px}
+.fe{font-size:13px;color:var(--error);margin-top:4px;display:none;align-items:center;gap:4px}
+.fe.show{display:flex}
+.fh{font-size:13px;color:var(--text-muted);margin-top:4px}
+.fr{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+@media(max-width:520px){.fr{grid-template-columns:1fr}}
+
+/* ── Radio ──────────────────────────────────────── */
+.rg{display:flex;flex-wrap:wrap;gap:8px}
+.ro{display:flex;align-items:center;gap:8px;padding:11px 16px;border:1.5px solid var(--border);border-radius:var(--radius-sm);cursor:pointer;transition:all .2s;font-size:14px;font-weight:500;flex:1;min-width:120px;justify-content:center;user-select:none}
+.ro:hover{border-color:var(--brand-green);background:rgba(110,186,46,.04)}
+.ro.on{border-color:var(--brand-green);background:var(--brand-green-light);color:var(--brand-green-dark);font-weight:700}
+.ro input{display:none}
+@media(max-width:520px){.rg{flex-direction:column}.ro{min-width:unset}}
+
+/* ── Sócio counter ──────────────────────────────── */
+.sc{display:flex;align-items:center;gap:16px;justify-content:center;padding:16px;background:var(--brand-blue-light);border-radius:var(--radius-sm);margin-bottom:20px}
+.sc button{width:46px;height:46px;border-radius:50%;border:2px solid var(--brand-blue);background:var(--card);color:var(--brand-blue);font-size:24px;font-weight:700;cursor:pointer;transition:all .2s;display:flex;align-items:center;justify-content:center}
+.sc button:hover:not(:disabled){background:var(--brand-blue);color:#fff}
+.sc button:disabled{opacity:.25;cursor:default}
+.sc .num{font-size:34px;font-weight:800;color:var(--brand-blue);min-width:50px;text-align:center}
+.sc .numlbl{font-size:13px;color:var(--text-sec);font-weight:600}
+
+/* ── Info boxes ─────────────────────────────────── */
+.ib{padding:14px 16px;border-radius:var(--radius-sm);font-size:14px;line-height:1.55;display:flex;gap:10px;align-items:flex-start;margin-bottom:14px}
+.ib.warn{background:#fef9ee;border:1px solid #fbbf24;color:#7c4d12}
+.ib.info{background:var(--brand-blue-light);border:1px solid #93a8d4;color:#1a3068}
+.ib.green{background:var(--brand-green-light);border:1px solid #86d44c;color:#3d6d14}
+.ib .ibi{font-size:18px;flex-shrink:0;margin-top:1px}
+
+/* ── Navigation ─────────────────────────────────── */
+.nav{display:flex;gap:12px;margin-top:26px}
+.btn{flex:1;padding:14px 24px;border:none;border-radius:var(--radius-sm);font-family:var(--font);font-size:16px;font-weight:700;cursor:pointer;transition:all .2s;display:flex;align-items:center;justify-content:center;gap:8px}
+.btn-go{background:var(--brand-green);color:#fff}
+.btn-go:hover{background:var(--brand-green-dark);transform:translateY(-1px)}
+.btn-bk{background:var(--card);color:var(--text-sec);border:1.5px solid var(--border)}
+.btn-bk:hover{background:#f8f9fa;border-color:var(--text-muted)}
+.btn-send{background:var(--brand-blue);color:#fff}
+.btn-send:hover:not(:disabled){background:#152654;transform:translateY(-1px)}
+.btn:disabled{opacity:.45;cursor:default;transform:none!important}
+
+/* ── Success ────────────────────────────────────── */
+.suc{text-align:center;padding:48px 20px;animation:up .45s ease both}
+.suc .chk{width:76px;height:76px;border-radius:50%;background:var(--brand-green-light);color:var(--brand-green);display:flex;align-items:center;justify-content:center;margin:0 auto 22px;font-size:38px;animation:pop .35s ease .15s both}
+.suc h2{font-size:24px;font-weight:800;color:var(--brand-blue);margin-bottom:6px}
+.suc p{font-size:15px;color:var(--text-sec);max-width:400px;margin:0 auto}
+
+/* ── Review ─────────────────────────────────────── */
+.rv{padding:14px;background:var(--brand-blue-light);border-radius:var(--radius-sm);margin-bottom:12px}
+.rv-hd{font-weight:700;font-size:15px;color:var(--brand-blue);margin-bottom:8px}
+.rv-ln{display:flex;gap:8px;font-size:14px;padding:3px 0}
+.rv-ln .lbl{color:var(--text-muted);min-width:110px;flex-shrink:0}
+.rv-ln .val{font-weight:500;word-break:break-word}
+
+/* ── Animations ─────────────────────────────────── */
+@keyframes up{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)}}
+@keyframes pop{from{opacity:0;transform:scale(.5)}to{opacity:1;transform:scale(1)}}
+@keyframes spin{to{transform:rotate(360deg)}}
+.spinner{width:20px;height:20px;border:3px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:spin .6s linear infinite;display:inline-block}
+
+@media print{body{background:#fff}.prog,.nav{display:none}}
+
+/* ── Collapsible tutorial ───────────────────────── */
+.tut{margin-top:10px}
+.tut summary{cursor:pointer;font-size:14px;font-weight:700;color:var(--brand-blue);padding:10px 14px;background:var(--brand-blue-light);border-radius:var(--radius-sm);user-select:none;list-style:none;display:flex;align-items:center;gap:8px}
+.tut summary::-webkit-details-marker{display:none}
+.tut summary::before{content:"▶";font-size:10px;transition:transform .2s}
+.tut[open] summary::before{transform:rotate(90deg)}
+.tut summary:hover{background:#d4deef}
+.tut .tut-body{padding:14px;background:#f8fafc;border:1px solid var(--border);border-top:none;border-radius:0 0 var(--radius-sm) var(--radius-sm);font-size:14px;line-height:1.7;color:var(--text-sec)}
+.tut .tut-body ol{padding-left:20px;margin:8px 0}
+.tut .tut-body li{margin-bottom:6px}
+</style>
+<script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
+</head>
+<body>
+
+<div class="wrap" id="app"></div>
+
+<script>
+/* ══════════════════════════════════════════════════════════════
+   CONFIGURAÇÃO — Amanda: edite aqui para mudar campos
+   ══════════════════════════════════════════════════════════════
+
+   🔧 COMO EDITAR:
+   • Adicionar campo → copie um bloco { id:... } e cole na posição desejada
+   • Remover campo  → apague o bloco inteiro (entre { } incluindo a vírgula)
+   • Reordenar      → mova o bloco para cima ou para baixo
+   • Tornar obrigatório → mude required: false para required: true
+   • Tornar opcional    → mude required: true  para required: false
+
+   Após editar, salve o arquivo e arraste novamente no Netlify.
+   ══════════════════════════════════════════════════════════════ */
+
+const SUPABASE_URL = "https://oafeqmekckvojpidizpb.supabase.co";
+const SUPABASE_KEY = "sb_publishable_XEEzhNu9RouZypEyt_kzWg_XdhHo0i-";
+
+/* Logo — coloque o arquivo na mesma pasta do deploy
+   Renomeie se necessário e atualize o nome abaixo */
+const LOGO_FILE = "LOGO_WEB_CONTADOR.jpeg";
+
+/* ── EmailJS — notificação por e-mail ao enviar formulário ────
+   Siga o guia de configuração para preencher os 3 valores abaixo.
+   Enquanto estiverem como "CONFIGURE_...", o formulário funciona
+   normalmente mas NÃO envia e-mail (só grava no Supabase).        */
+const EMAILJS_PUBLIC_KEY = "SP86LgTFKU21SRRm3";
+const EMAILJS_SERVICE_ID = "service_3k32vc9";
+const EMAILJS_TEMPLATE_ID = "template_ehqdo77";
+const EMAILJS_ENABLED = EMAILJS_PUBLIC_KEY !== "CONFIGURE_SUA_PUBLIC_KEY" && EMAILJS_SERVICE_ID !== "FALTA_SEU_SERVICE_ID";
+
+/* Destinatários do e-mail de notificação */
+const NOTIFY_EMAILS = "societario_webcontador@outlook.com, apoio@webcontador.com.br";
+
+/* ── Seções do formulário ────────────────────────── */
+const SECTIONS = [
+  {
+    id: "socios", title: "Dados Pessoais", icon: "👤",
+    subtitle: "Informações de cada sócio da empresa",
+    repeatable: true, maxRepeat: 6,
+    fields: [
+      /* ⭐ OBRIGATÓRIOS — bloqueiam o avanço se vazios */
+      { id: "nome",     label: "Nome completo", type: "text",  required: true, ph: "Ex: Maria da Silva" },
+      { id: "email",    label: "E-mail",        type: "email", required: true, ph: "email@exemplo.com" },
+      { id: "whatsapp", label: "WhatsApp",      type: "tel",   required: true, ph: "(11) 99999-9999", mask: "phone" },
+
+      /* Opcionais — o cliente pode pular e informar depois */
+      { id: "cpf",         label: "CPF",                type: "text",   required: false, ph: "000.000.000-00", mask: "cpf", validate: "cpf" },
+      { id: "nascimento",  label: "Data de nascimento", type: "date",   required: false },
+      { id: "estado_civil",label: "Estado Civil",        type: "select", required: true,
+        options: ["Solteiro(a)", "Casado(a)", "Divorciado(a)", "Viúvo(a)", "União Estável"] },
+      { id: "regime_bens", label: "Regime de bens",      type: "select", required: true,
+        conditional: { field: "estado_civil", value: "Casado(a)" },
+        options: ["Comunhão Parcial de Bens (padrão)", "Comunhão Universal de Bens", "Separação Total de Bens", "Participação Final nos Aquestos"] },
+      { id: "municipio_nasc", label: "Município de nascimento", type: "text", required: true, ph: "Ex: São Paulo" },
+      { id: "uf_nasc", label: "UF de nascimento", type: "select", required: false,
+        options: ["AC","AL","AM","AP","BA","CE","DF","ES","GO","MA","MG","MS","MT","PA","PB","PE","PI","PR","RJ","RN","RO","RR","RS","SC","SE","SP","TO"] },
+      { id: "end_logradouro", label: "Endereço residencial — Rua, número e complemento", type: "text", required: false, ph: "Ex: Rua das Flores, 123, apto 45" },
+      { id: "end_bairro", label: "Bairro", type: "text", required: false, ph: "Ex: Jardim Paulista" },
+      { id: "end_cidade", label: "Cidade", type: "text", required: false, ph: "Ex: São Paulo" },
+      { id: "end_cep", label: "CEP", type: "text", required: false, ph: "00000-000" },
+      { id: "end_uf", label: "UF", type: "select", required: false,
+        options: ["AC","AL","AM","AP","BA","CE","DF","ES","GO","MA","MG","MS","MT","PA","PB","PE","PI","PR","RJ","RN","RO","RR","RS","SC","SE","SP","TO"] },
+      { id: "percentual", label: "Qual será a sua participação % societária?", type: "text", required: false, ph: "Ex: 51", onlyMultiSocio: true,
+        help_html: '<div class="ib info" style="margin-top:8px"><span class="ibi">ℹ️</span><div><strong>Observação:</strong> Se for franqueado Prudential, o corretor deve ser <strong>majoritário, com no mínimo 51% de participação</strong>.</div></div>' },
+      { id: "senha_govbr", label: "Senha GOV.BR (Pessoa Física)", type: "text", required: true, ph: "Sua senha do portal GOV.BR",
+        help_html: '<div class="ib warn" style="margin-top:8px"><span class="ibi">⚠️</span><div><strong>Atenção — GOV.BR:</strong><br>• Sua conta precisa ser nível <strong>PRATA</strong> ou <strong>OURO</strong><br>• <strong>Desative a verificação em duas etapas</strong> antes de nos enviar a senha<br>• Após a abertura da empresa, <strong>troque sua senha</strong> por segurança<br>• Sua senha será usada exclusivamente para os procedimentos de abertura</div></div><details class="tut"><summary>📱 Precisa de ajuda para desabilitar a verificação em duas etapas? Clique aqui</summary><div class="tut-body"><strong>Passo a passo pelo celular:</strong><ol><li>Baixe ou abra o aplicativo <strong>GOV.BR</strong> no seu celular<br><span style="color:var(--text-muted);font-size:13px">Disponível na App Store (iPhone) e Play Store (Android)</span></li><li>Faça login com seu <strong>CPF e senha</strong></li><li>Na tela inicial, toque em <strong>"Segurança da conta"</strong></li><li>Toque em <strong>"Verificação em duas etapas"</strong></li><li>Toque em <strong>"Desabilitar verificação em duas etapas"</strong></li><li>Confirme a desativação</li></ol><strong>Pronto!</strong> Você receberá um e-mail do GOV.BR confirmando a desativação.<br><br><span style="color:#7c4d12;font-size:13px">⚠️ <strong>Importante:</strong> Não remova o aplicativo GOV.BR nem troque de celular com a verificação ativa, ou você pode perder o acesso à sua conta.</span><br><span style="color:#7c4d12;font-size:13px">💡 Caso não consiga pelo app, acesse <strong>gov.br/atendimento</strong> e solicite a desativação com reconhecimento facial.</span></div></details>' },
+    ]
+  },
+  {
+    id: "empresa", title: "Dados da Empresa", icon: "🏢",
+    subtitle: "Informações sobre a empresa a ser aberta",
+    fields: [
+      { id: "tipo_sede", label: "Tipo de endereço da sede", type: "radio", required: false,
+        options: ["Residencial", "Comercial / Coworking"] },
+      { id: "copiar_de_socio", label: "Deseja copiar o endereço de qual sócio?", type: "radio", required: false,
+        conditional: { field: "tipo_sede", value: "Residencial" }, options: ["Sócio 1", "Sócio 2", "Sócio 3", "Sócio 4", "Sócio 5", "Sócio 6", "Não copiar — preencher manualmente"] },
+      { id: "sede_logradouro", label: "Endereço da sede — Rua, número e complemento", type: "text", required: false, ph: "Ex: Rua das Flores, 123, sala 10" },
+      { id: "sede_bairro", label: "Bairro", type: "text", required: false, ph: "Ex: Jardim Paulista" },
+      { id: "sede_cidade", label: "Cidade", type: "text", required: false, ph: "Ex: São Paulo" },
+      { id: "sede_cep", label: "CEP", type: "text", required: false, ph: "00000-000" },
+      { id: "sede_uf", label: "UF", type: "select", required: false,
+        options: ["AC","AL","AM","AP","BA","CE","DF","ES","GO","MA","MG","MS","MT","PA","PB","PE","PI","PR","RJ","RN","RO","RR","RS","SC","SE","SP","TO"] },
+      { id: "ramo", label: "Ramo de atividade", type: "select", required: false,
+        options: ["Corretor(a) de Seguros", "Outro (especificar abaixo)"] },
+      { id: "ramo_outro", label: "Qual atividade?", type: "text", required: false,
+        conditional: { field: "ramo", value: "Outro (especificar abaixo)" }, ph: "Descreva o ramo de atividade" },
+      { id: "prudential", label: "Sua corretora é vinculada à Prudential?", type: "radio", required: false,
+        conditional: { field: "ramo", value: "Corretor(a) de Seguros" }, options: ["Sim", "Não"] },
+      { id: "data_susep", label: "Data da prova SUSEP", type: "date", required: false,
+        conditional: { field: "ramo", value: "Corretor(a) de Seguros" } },
+      { id: "capital_social", label: "Capital social", type: "text", required: false,
+        ph: "R$ 10.000,00", help: "Padrão: R$ 10.000,00. Informe outro valor se diferente." },
+      { id: "nome_fantasia", label: "Nome fantasia (marca) (opcional)", type: "text", required: false,
+        ph: "Nome comercial da empresa", help: "Este nome irá no cartão CNPJ." },
+      { id: "info_razao_social", type: "infoOnly",
+        help_html: '<div class="ib info" style="margin-top:8px;margin-bottom:12px"><span class="ibi">ℹ️</span><div><strong>Como preencher a Razão Social (3 opções abaixo):</strong><br>Caso utilize seu nome na razão social, ele deve estar <strong>completo</strong> ou com <strong>abreviação, desde que o último sobrenome esteja completo</strong>.<br><br><strong>Exemplos válidos:</strong><br>• Maria A Ferreira Corretora de Seguros LTDA<br>• Maria Aparecida Ferreira Corretora de Seguros LTDA<br><br>Deve constar a atividade. Ex: "Nome + Corretora de Seguros + LTDA".<br><br>Informe 3 opções em ordem de preferência — usaremos a primeira disponível na Junta Comercial.</div></div>' },
+      { id: "razao_social_1", label: "Razão Social — Opção 1", type: "text", required: true,
+        ph: "Ex: Maria Aparecida Ferreira Corretora de Seguros LTDA" },
+      { id: "razao_social_2", label: "Razão Social — Opção 2", type: "text", required: true, ph: "Alternativa" },
+      { id: "razao_social_3", label: "Razão Social — Opção 3", type: "text", required: true, ph: "Alternativa" },
+    ]
+  },
+  {
+    id: "pagamento", title: "Pagamento e Documentos", icon: "💳",
+    subtitle: "Forma de pagamento e orientação sobre documentos",
+    fields: [
+      { id: "forma_pgto", label: "Forma de pagamento", type: "radio", required: false,
+        options: ["À Vista (boleto)", "2x no Cartão", "3x no Cartão"],
+        help_html: '<div class="ib info" id="pgto-card-msg"><span class="ibi">💳</span><div><strong>Sobre o pagamento:</strong> O link ou boleto para pagamento será enviado por <strong>e-mail</strong> após a confirmação dos dados deste formulário.</div></div>' },
+    ],
+    after_html: `
+      <div style="margin-top:20px;padding-top:20px;border-top:1px solid var(--border)">
+        <div style="font-size:16px;font-weight:700;color:var(--text);margin-bottom:12px;display:flex;align-items:center;gap:8px">📎 Documentos Necessários</div>
+        <div class="ib green"><span class="ibi">📋</span><div>
+          <strong>Após preencher este formulário, envie os seguintes documentos:</strong><br><br>
+          <strong>Documentos pessoais de cada sócio:</strong><br>
+          • RG e CPF (ou CNH)<br>
+          • Cópia simples do Título de Eleitor<br>
+          • Últimos 2 recibos de entrega de Imposto de Renda<br>
+          • Comprovante de endereço atualizado (últimos 90 dias)<br>
+          • Certidão de casamento (se casado)<br><br>
+          <strong>Documentos do imóvel (sede da empresa):</strong><br>
+          Cópia do IPTU contendo:<br>
+          &nbsp;&nbsp;• Número de inscrição do imóvel<br>
+          &nbsp;&nbsp;• Área construída<br>
+          &nbsp;&nbsp;• Área do terreno<br>
+          &nbsp;&nbsp;• Endereço completo<br><br>
+          <strong>Se Corretor(a) de Seguros (cadastro SUSEP Pessoa Física):</strong><br>
+          • Foto de rosto recente<br><br>
+          <strong>Envie para:</strong><br>
+          📧 <strong>apoio@webcontador.com.br</strong><br>
+          📱 <strong>WhatsApp: (11) 94257-2816</strong><br><br>
+          <em>Dica: tire fotos legíveis ou escaneie os documentos. Fotos cortadas ou embaçadas atrasam o processo.</em>
+        </div></div>
+      </div>
+    `
+  }
+];
+
+/* ══════════════════════════════════════════════════════════════
+   ENGINE — NÃO EDITAR ABAIXO (a menos que saiba o que faz)
+   ══════════════════════════════════════════════════════════════ */
+
+let step = 0;
+let nSocios = 1;
+let data = { socios: [{}], empresa: {}, pagamento: {} };
+let errors = {};
+let touched = {};
+let sending = false;
+let sent = false;
+
+const totalSteps = SECTIONS.length + 1;
+const stepLabels = [...SECTIONS.map(s => s.title), "Revisão"];
+
+/* ── Masks ──────────────────────────────────────── */
+function maskCpf(v) {
+  const d = v.replace(/\D/g, "").slice(0, 11);
+  if (d.length <= 3) return d;
+  if (d.length <= 6) return d.slice(0,3)+"."+d.slice(3);
+  if (d.length <= 9) return d.slice(0,3)+"."+d.slice(3,6)+"."+d.slice(6);
+  return d.slice(0,3)+"."+d.slice(3,6)+"."+d.slice(6,9)+"-"+d.slice(9);
+}
+function maskPhone(v) {
+  const d = v.replace(/\D/g, "").slice(0, 11);
+  if (d.length <= 2) return d.length ? "("+d : "";
+  if (d.length <= 7) return "("+d.slice(0,2)+") "+d.slice(2);
+  return "("+d.slice(0,2)+") "+d.slice(2,7)+"-"+d.slice(7);
+}
+function validCpf(cpf) {
+  const d = cpf.replace(/\D/g, "");
+  if (d.length !== 11 || /^(\d)\1{10}$/.test(d)) return false;
+  let s = 0; for (let i=0;i<9;i++) s += +d[i]*(10-i);
+  let c = 11-(s%11); if(c>=10)c=0; if(+d[9]!==c) return false;
+  s=0; for(let i=0;i<10;i++) s+=+d[i]*(11-i);
+  c=11-(s%11); if(c>=10)c=0; return +d[10]===c;
+}
+function validEmail(e) { return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e); }
+
+/* ── Data helpers ───────────────────────────────── */
+function getV(sec, fid, si) {
+  if (sec === "socios") return (data.socios[si] || {})[fid] || "";
+  return (data[sec] || {})[fid] || "";
+}
+function setV(sec, fid, val, si) {
+  if (sec === "socios") { if (!data.socios[si]) data.socios[si] = {}; data.socios[si][fid] = val; }
+  else { if (!data[sec]) data[sec] = {}; data[sec][fid] = val; }
+}
+function fk(sec, fid, si) { return sec === "socios" ? `socios.${si}.${fid}` : `${sec}.${fid}`; }
+
+/* ── Validation ─────────────────────────────────── */
+function valOne(sec, f, si) {
+  const k = fk(sec, f.id, si);
+  const v = getV(sec, f.id, si).toString().trim();
+  if (f.conditional) {
+    const pv = getV(sec, f.conditional.field, si);
+    if (pv !== f.conditional.value) { delete errors[k]; return true; }
+  }
+  if (f.required && !v) { errors[k] = "Campo obrigatório"; return false; }
+  if (!v) { delete errors[k]; return true; }
+  if (f.validate === "cpf" && !validCpf(v)) { errors[k] = "CPF inválido"; return false; }
+  if (f.type === "email" && !validEmail(v)) { errors[k] = "E-mail inválido"; return false; }
+  if (f.type === "tel" && v.replace(/\D/g, "").length < 10) { errors[k] = "Telefone incompleto"; return false; }
+  delete errors[k]; return true;
+}
+
+function isVis(f, sec, si) {
+  if (f.onlyMultiSocio && nSocios < 2) return false;
+  if (!f.conditional) return true;
+  return getV(sec, f.conditional.field, si) === f.conditional.value;
+}
+
+function valStep(s) {
+  const sec = SECTIONS[s];
+  if (!sec || sec.infoOnly) return true;
+  let ok = true;
+  const check = (f, si) => {
+    if (!isVis(f, sec.id, si)) return;
+    touched[fk(sec.id, f.id, si)] = true;
+    if (!valOne(sec.id, f, si)) ok = false;
+  };
+  if (sec.repeatable) { for (let i=0;i<nSocios;i++) sec.fields.forEach(f => check(f, i)); }
+  else sec.fields.forEach(f => check(f, 0));
+  return ok;
+}
+
+/* ── Navigation ─────────────────────────────────── */
+function goNext() {
+  if (step < SECTIONS.length && !valStep(step)) { render(); return; }
+  step++; render(); window.scrollTo({ top: 0, behavior: "smooth" });
+}
+function goBack() { if (step > 0) step--; render(); window.scrollTo({ top: 0, behavior: "smooth" }); }
+function addSocio() { if (nSocios < 6) { nSocios++; if(!data.socios[nSocios-1]) data.socios[nSocios-1]={}; render(); } }
+function remSocio() { if (nSocios > 1) { nSocios--; data.socios=data.socios.slice(0,nSocios); render(); } }
+
+/* ── Submit ─────────────────────────────────────── */
+async function doSubmit() {
+  if (sending) return;
+  sending = true; render();
+  let cat = "outros";
+  if (data.empresa.ramo === "Corretor(a) de Seguros") cat = data.empresa.prudential === "Sim" ? "prudential" : "corretora";
+
+  const payload = {
+    form_type: "abertura", status: "pending",
+    form_data: { ...data, numSocios: nSocios, clientCategory: cat, submittedAt: new Date().toISOString(), ua: navigator.userAgent }
+  };
+  try {
+    const r = await fetch(SUPABASE_URL + "/rest/v1/form_submissions", {
+      method: "POST",
+      headers: { apikey: SUPABASE_KEY, Authorization: "Bearer " + SUPABASE_KEY, "Content-Type": "application/json", Prefer: "return=minimal" },
+      body: JSON.stringify(payload)
+    });
+    if (!r.ok) throw new Error(r.status);
+  } catch(e) {
+    console.error("Erro envio:", e);
+    try { const p = JSON.parse(localStorage.getItem("wc_form_pending")||"[]"); p.push(payload); localStorage.setItem("wc_form_pending", JSON.stringify(p)); } catch {}
+  }
+  sending = false; sent = true;
+
+  /* ── Enviar e-mail de notificação via EmailJS — DADOS COMPLETOS ── */
+  if (EMAILJS_ENABLED) {
+    try {
+      emailjs.init(EMAILJS_PUBLIC_KEY);
+      const agora = new Date();
+      const dataHora = agora.toLocaleDateString("pt-BR") + " " + agora.toLocaleTimeString("pt-BR", {hour:"2-digit",minute:"2-digit"});
+      const fmtD = iso => iso ? iso.split("-").reverse().join("/") : "";
+      const row = (label, value, highlight) => value
+        ? `<tr>
+            <td style="padding:7px 12px;background:${highlight?"#fff8e1":"#f4f6f9"};font-weight:600;font-size:13px;width:38%;color:#1a3068;border-bottom:1px solid #e2e8f0">${label}</td>
+            <td style="padding:7px 12px;background:${highlight?"#fff8e1":"#fff"};font-size:13px;border-bottom:1px solid #e2e8f0;${highlight?"font-weight:700;color:#b45309":""}">${value}</td>
+           </tr>`
+        : "";
+
+      /* ── Socios ── */
+      let sociosHtml = "";
+      for (let i = 0; i < nSocios; i++) {
+        const s = data.socios[i] || {};
+        sociosHtml += `
+          <h3 style="font-family:sans-serif;color:#1a3068;margin:20px 0 8px;font-size:15px">
+            👤 ${nSocios > 1 ? "Sócio " + (i+1) : "Dados Pessoais"}
+            ${nSocios > 1 && s.percentual ? '<span style="font-size:12px;background:#e4eaf5;padding:2px 8px;border-radius:4px;margin-left:8px">'+s.percentual+'%</span>' : ""}
+          </h3>
+          <table style="width:100%;border-collapse:collapse;border:1px solid #e2e8f0;border-radius:8px;overflow:hidden;margin-bottom:4px">
+            ${row("Nome completo", s.nome)}
+            ${row("CPF", s.cpf)}
+            ${row("Data de nascimento", fmtD(s.nascimento))}
+            ${row("Estado civil", s.estado_civil)}
+            ${row("Regime de bens", s.regime_bens)}
+            ${row("Município de nascimento", s.municipio_nasc + (s.uf_nasc ? " / " + s.uf_nasc : ""))}
+            ${row("E-mail", s.email)}
+            ${row("WhatsApp", s.whatsapp)}
+            ${row("Endereço", s.end_logradouro)}
+            ${row("Bairro", s.end_bairro)}
+            ${row("Cidade / UF", s.end_cidade ? s.end_cidade + (s.end_uf ? " / " + s.end_uf : "") : "")}
+            ${row("CEP", s.end_cep)}
+            ${row("⚠️ Senha GOV.BR", s.senha_govbr, true)}
+          </table>`;
+      }
+
+      /* ── Empresa ── */
+      const e = data.empresa || {};
+      const empresaHtml = `
+        <h3 style="font-family:sans-serif;color:#1a3068;margin:20px 0 8px;font-size:15px">🏢 Dados da Empresa</h3>
+        <table style="width:100%;border-collapse:collapse;border:1px solid #e2e8f0;border-radius:8px;overflow:hidden;margin-bottom:4px">
+          ${row("Ramo de atividade", e.ramo_outro || e.ramo)}
+          ${row("Vinculada Prudential", e.prudential)}
+          ${row("Data prova SUSEP", fmtD(e.data_susep))}
+          ${row("Capital social", e.capital_social)}
+          ${row("Nome fantasia", e.nome_fantasia)}
+          ${row("Razão Social — Opção 1", e.razao_social_1)}
+          ${row("Razão Social — Opção 2", e.razao_social_2)}
+          ${row("Razão Social — Opção 3", e.razao_social_3)}
+          ${row("Tipo de sede", e.tipo_sede)}
+          ${row("Endereço da sede", e.sede_logradouro)}
+          ${row("Bairro sede", e.sede_bairro)}
+          ${row("Cidade / UF sede", e.sede_cidade ? e.sede_cidade + (e.sede_uf ? " / " + e.sede_uf : "") : "")}
+          ${row("CEP sede", e.sede_cep)}
+        </table>`;
+
+      /* ── Pagamento ── */
+      const p = data.pagamento || {};
+      const pagtoHtml = `
+        <h3 style="font-family:sans-serif;color:#1a3068;margin:20px 0 8px;font-size:15px">💳 Pagamento</h3>
+        <table style="width:100%;border-collapse:collapse;border:1px solid #e2e8f0;border-radius:8px;overflow:hidden;margin-bottom:4px">
+          ${row("Forma de pagamento", p.forma_pgto)}
+        </table>`;
+
+      /* ── Aviso senha ── */
+      const avisoHtml = `
+        <div style="margin-top:20px;padding:12px 16px;background:#fef9ee;border:1px solid #fbbf24;border-radius:8px;font-family:sans-serif;font-size:13px;color:#7c4d12">
+          ⚠️ <strong>Lembrete:</strong> após usar a senha GOV.BR, solicite ao cliente que a troque por segurança.
+        </div>`;
+
+      await emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, {
+        to_email: NOTIFY_EMAILS,
+        cliente_nome: (data.socios[0] || {}).nome || "(não informado)",
+        num_socios: nSocios,
+        data_envio: dataHora,
+        conteudo_completo: sociosHtml + empresaHtml + pagtoHtml + avisoHtml,
+      });
+      console.log("E-mail de notificação enviado com dados completos!");
+    } catch(emailErr) {
+      console.warn("EmailJS falhou (formulário foi salvo no Supabase):", emailErr);
+    }
+  }
+
+  render(); window.scrollTo({ top: 0, behavior: "smooth" });
+}
+function resetForm() {
+  step=0; nSocios=1; data={socios:[{}],empresa:{},pagamento:{}}; errors={}; touched={}; sending=false; sent=false;
+  render(); window.scrollTo({ top: 0, behavior: "smooth" });
+}
+
+/* ══════════════════════════════════════════════════════════════
+   RENDER — builds HTML once per step (NOT per keystroke!)
+   Event delegation handles live input without re-renders.
+   ══════════════════════════════════════════════════════════════ */
+function esc(s) { return (s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;"); }
+function fmtDate(d) { if(!d)return""; const p=d.split("-"); return p.length===3?`${p[2]}/${p[1]}/${p[0]}`:d; }
+function rvLine(l,v) { return v?`<div class="rv-ln"><span class="lbl">${l}:</span><span class="val">${esc(v)}</span></div>`:'';}
+
+function buildField(f, secId, si) {
+  const k = fk(secId, f.id, si||0);
+  const v = getV(secId, f.id, si||0);
+  const err = touched[k] ? errors[k] : null;
+  const vis = isVis(f, secId, si||0);
+  // Campo "apenas informativo" — renderiza só o bloco de instrução, sem input nem label
+  if (f.type === "infoOnly") {
+    return `<div class="fg${vis?'':' hidden'}" id="fg-${k}">${f.help_html||''}</div>`;
+  }
+  let inner = "";
+  if (f.type === "select") {
+    inner = `<select class="fs${err?' err':''}" data-k="${k}" data-sec="${secId}" data-fid="${f.id}" data-si="${si||0}">
+      <option value="">Selecione...</option>${f.options.map(o=>`<option value="${esc(o)}"${v===o?' selected':''}>${esc(o)}</option>`).join("")}</select>`;
+  } else if (f.type === "radio") {
+    // Filtro dinâmico: copiar_de_socio mostra só sócios existentes
+    let opts = f.options;
+    if (f.id === "copiar_de_socio") {
+      opts = [];
+      for (let i = 1; i <= nSocios; i++) opts.push(`Sócio ${i}`);
+      opts.push("Não copiar — preencher manualmente");
+    }
+    inner = `<div class="rg">${opts.map(o=>
+      `<label class="ro${v===o?' on':''}" data-k="${k}" data-sec="${secId}" data-fid="${f.id}" data-si="${si||0}" data-val="${esc(o)}"><input type="radio" name="${k}" value="${esc(o)}"${v===o?' checked':''}>${esc(o)}</label>`
+    ).join("")}</div>`;
+  } else if (f.type === "textarea") {
+    inner = `<textarea class="ft${err?' err':''}" data-k="${k}" data-sec="${secId}" data-fid="${f.id}" data-si="${si||0}" placeholder="${f.ph||''}">${esc(v)}</textarea>`;
+  } else {
+    const cls = err?" err":(touched[k]&&v&&!err?" ok":"");
+    inner = `<input type="${f.type}" class="fi${cls}" value="${esc(v)}" placeholder="${f.ph||''}" data-k="${k}" data-sec="${secId}" data-fid="${f.id}" data-si="${si||0}" ${f.mask?`data-mask="${f.mask}"`:''} autocomplete="off">`;
+  }
+  return `<div class="fg${vis?'':' hidden'}" data-cond-field="${f.conditional?f.conditional.field:''}" data-cond-value="${f.conditional?esc(f.conditional.value):''}" data-cond-sec="${secId}" data-cond-si="${si||0}" id="fg-${k}">
+    <label class="fl">${f.label}${f.required?'<span class="req">*</span>':''}</label>
+    ${inner}${f.help?`<div class="fh">${f.help}</div>`:''}${f.help_html||''}
+    <div class="fe${err?' show':''}" id="fe-${k}">⚠ ${err||''}</div></div>`;
+}
+
+function render() {
+  const app = document.getElementById("app");
+  let h = `<div class="hdr">
+    <img src="${LOGO_FILE}" alt="WebContador" class="hdr-logo" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
+    <div class="hdr-fb"><span class="mk">WEB<span>Contador</span></span></div>
+    <h1>Abertura de Empresa</h1>
+    <div class="sub">Preencha os dados para iniciar o processo de abertura</div>
+    ${!sent?'<div class="tag">📋 Seus dados serão usados nos documentos oficiais</div>':''}
+  </div>`;
+
+  if (sent) {
+    h += `<div class="suc"><div class="chk">✓</div>
+      <h2>Formulário Enviado com Sucesso!</h2>
+      <p>Recebemos seus dados. A equipe do WebContador entrará em contato em breve para os próximos passos.</p>
+      <div class="ib green" style="margin-top:22px;text-align:left"><span class="ibi">📋</span><div>
+        <strong>Próximos passos:</strong><br>
+        1. Envie os <strong>documentos pessoais e da empresa</strong> (lista abaixo)<br>
+        2. Aguarde nosso contato para assinatura das procurações<br>
+        3. Acompanhe o andamento pelo e-mail ou WhatsApp<br><br>
+        <strong>Envie os documentos para:</strong><br>
+        📧 <strong>apoio@webcontador.com.br</strong><br>
+        📱 <strong>WhatsApp: (11) 94257-2816</strong><br><br>
+        <strong>Documentos necessários:</strong><br>
+        • RG e CPF (ou CNH) de cada sócio<br>
+        • Cópia simples do Título de Eleitor<br>
+        • Últimos 2 recibos de entrega de Imposto de Renda de cada sócio<br>
+        • Comprovante de endereço atualizado<br>
+        • Certidão de casamento (se casado)<br>
+        • Cópia do IPTU da sede (com nº de inscrição, área construída, área do terreno e endereço)<br>
+        • Foto de rosto (se Corretor de Seguros — SUSEP PF)
+      </div></div>
+      <button class="btn btn-bk" style="margin-top:22px;max-width:300px;margin-left:auto;margin-right:auto" onclick="resetForm()">← Enviar outro formulário</button>
+    </div>`;
+    app.innerHTML = h; return;
+  }
+
+  // Progress
+  h += `<div class="prog"><div class="prog-dots">`;
+  for (let i=0;i<totalSteps;i++){
+    if(i>0) h+=`<div class="prog-ln${i<=step?' ok':''}"></div>`;
+    h+=`<div class="prog-dot${i===step?' on':i<step?' ok':''}"></div>`;
+  }
+  h+=`</div><div class="prog-lbl">${stepLabels[step]} (${step+1}/${totalSteps})</div></div>`;
+
+  if (step < SECTIONS.length) {
+    const sec = SECTIONS[step];
+    if (sec.repeatable) {
+      h += `<div class="card"><div class="card-title"><span class="ic">👥</span>Quantidade de Sócios</div>
+        <div class="card-sub">Quantas pessoas farão parte da empresa?</div>
+        <div class="sc"><button onclick="remSocio()"${nSocios<=1?' disabled':''}>−</button>
+        <div><div class="num">${nSocios}</div><div class="numlbl">sócio${nSocios>1?'s':''}</div></div>
+        <button onclick="addSocio()"${nSocios>=6?' disabled':''}>+</button></div></div>`;
+      for (let s=0;s<nSocios;s++) {
+        h+=`<div class="card socio" style="animation-delay:${s*.06}s">
+          <div class="card-title"><span class="ic">👤</span>${nSocios>1?`Sócio ${s+1}`:'Dados Pessoais'}</div>
+          <div class="card-sub">${nSocios>1?`Informações do ${s+1}º sócio`:'Preencha seus dados pessoais'}</div>
+          ${sec.fields.map(f=>buildField(f,sec.id,s)).join("")}</div>`;
+      }
+      h+=`<div class="nav"><button class="btn btn-go" onclick="goNext()">Continuar →</button></div>`;
+    } else {
+      h+=`<div class="card"><div class="card-title"><span class="ic">${sec.icon}</span>${sec.title}</div>
+        <div class="card-sub">${sec.subtitle}</div>
+        ${sec.fields.map(f=>buildField(f,sec.id)).join("")}
+        ${sec.after_html||''}
+      </div>`;
+      h+=`<div class="nav">${step>0?'<button class="btn btn-bk" onclick="goBack()">← Voltar</button>':''}
+        <button class="btn btn-go" onclick="goNext()">Continuar →</button></div>`;
+    }
+  } else {
+    // Review
+    h+=`<div class="card"><div class="card-title"><span class="ic">📋</span>Revisão dos Dados</div>
+      <div class="card-sub">Confira antes de enviar — você pode voltar e corrigir qualquer dado</div>`;
+    for (let s=0;s<nSocios;s++){
+      const d=data.socios[s]||{};
+      h+=`<div class="rv"><div class="rv-hd">👤 ${nSocios>1?`Sócio ${s+1}`:'Dados Pessoais'}</div>
+        ${rvLine("Nome",d.nome)}${rvLine("E-mail",d.email)}${rvLine("WhatsApp",d.whatsapp)}
+        ${rvLine("CPF",d.cpf)}${rvLine("Nascimento",fmtDate(d.nascimento))}
+        ${rvLine("Estado Civil",d.estado_civil)}${d.regime_bens?rvLine("Regime",d.regime_bens):''}
+        ${rvLine("Município nasc.",d.municipio_nasc)}${rvLine("UF nasc.",d.uf_nasc)}
+        ${rvLine("Endereço (rua, nº, compl.)",d.end_logradouro)}
+        ${rvLine("Bairro",d.end_bairro)}${rvLine("Cidade",d.end_cidade)}
+        ${rvLine("CEP",d.end_cep)}${rvLine("UF",d.end_uf)}
+        ${nSocios>1?rvLine("Participação %",d.percentual):''}
+        ${d.senha_govbr?rvLine("GOV.BR","(informada)"):''}</div>`;
+    }
+    const e=data.empresa||{};
+    h+=`<div class="rv"><div class="rv-hd">🏢 Empresa</div>
+      ${rvLine("Tipo de endereço",e.tipo_sede)}
+      ${rvLine("Sede (rua, nº, compl.)",e.sede_logradouro)}
+      ${rvLine("Bairro",e.sede_bairro)}${rvLine("Cidade",e.sede_cidade)}
+      ${rvLine("CEP",e.sede_cep)}${rvLine("UF",e.sede_uf)}
+      ${rvLine("Ramo",e.ramo)}${e.ramo_outro?rvLine("Atividade",e.ramo_outro):''}
+      ${e.prudential?rvLine("Prudential",e.prudential):''}${e.data_susep?rvLine("SUSEP",fmtDate(e.data_susep)):''}
+      ${rvLine("Capital",e.capital_social)}${rvLine("Fantasia",e.nome_fantasia)}
+      ${rvLine("Razão Social 1",e.razao_social_1)}${rvLine("Razão Social 2",e.razao_social_2)}
+      ${rvLine("Razão Social 3",e.razao_social_3)}</div>`;
+    const p=data.pagamento||{};
+    h+=`<div class="rv"><div class="rv-hd">💳 Pagamento</div>${rvLine("Forma",p.forma_pgto)}</div>`;
+    h+=`<div class="ib info" style="margin-top:14px"><span class="ibi">📧</span><div>
+      <strong>Após o envio deste formulário e dos documentos, você receberá um e-mail com a confirmação dos dados e as procurações necessárias.</strong><br><br>
+      Documentos enviar para: <strong>apoio@webcontador.com.br</strong> ou <strong>WhatsApp (11) 94257-2816</strong></div></div>`;
+    h+=`</div><div class="nav"><button class="btn btn-bk" onclick="goBack()">← Voltar</button>
+      <button class="btn btn-send" onclick="doSubmit()"${sending?' disabled':''}>
+        ${sending?'<span class="spinner"></span> Enviando...':'✓ Enviar Formulário'}</button></div>`;
+  }
+
+  app.innerHTML = h;
+  attachEvents();
+}
+
+/* ══════════════════════════════════════════════════════════════
+   EVENT DELEGATION — handles all inputs WITHOUT re-rendering
+   ══════════════════════════════════════════════════════════════ */
+function attachEvents() {
+  const root = document.getElementById("app");
+
+  // ── Text input: update data silently, NO re-render ──
+  root.addEventListener("input", function handler(ev) {
+    const el = ev.target;
+    if (!el.dataset || !el.dataset.k) return;
+    let val = el.value;
+    if (el.dataset.mask) {
+      if (el.dataset.mask === "cpf") val = maskCpf(val);
+      else if (el.dataset.mask === "phone") val = maskPhone(val);
+      // Preserve cursor position
+      const pos = el.selectionStart;
+      const diff = val.length - el.value.length;
+      el.value = val;
+      el.setSelectionRange(pos + diff, pos + diff);
+    }
+    setV(el.dataset.sec, el.dataset.fid, val, +el.dataset.si);
+  }, { capture: true });
+
+  // ── Select change: update + show/hide conditionals ──
+  root.addEventListener("change", function handler(ev) {
+    const el = ev.target;
+    if (!el.dataset || !el.dataset.k) return;
+    setV(el.dataset.sec, el.dataset.fid, el.value, +el.dataset.si);
+    updateCond(el.dataset.sec, el.dataset.fid, +el.dataset.si);
+    touched[el.dataset.k] = true;
+    const sec = SECTIONS.find(s=>s.id===el.dataset.sec);
+    const f = sec && sec.fields.find(x=>x.id===el.dataset.fid);
+    if (f) { valOne(el.dataset.sec, f, +el.dataset.si); updateErr(el.dataset.k, el); }
+  }, { capture: true });
+
+  // ── Blur: validate and show error ──
+  root.addEventListener("focusout", function handler(ev) {
+    const el = ev.target;
+    if (!el.dataset || !el.dataset.k) return;
+    touched[el.dataset.k] = true;
+    const sec = SECTIONS.find(s=>s.id===el.dataset.sec);
+    const f = sec && sec.fields.find(x=>x.id===el.dataset.fid);
+    if (f) { valOne(el.dataset.sec, f, +el.dataset.si); updateErr(el.dataset.k, el); }
+  }, { capture: true });
+
+  // ── Radio clicks ──
+  root.querySelectorAll(".ro").forEach(lbl => {
+    lbl.addEventListener("click", function() {
+      const val = this.dataset.val;
+      setV(this.dataset.sec, this.dataset.fid, val, +this.dataset.si);
+      const parent = this.closest(".rg");
+      if (parent) { parent.querySelectorAll(".ro").forEach(r=>r.classList.remove("on")); this.classList.add("on"); }
+      updateCond(this.dataset.sec, this.dataset.fid, +this.dataset.si);
+
+      // ── Copiar endereço do sócio escolhido para a sede ──
+      if (this.dataset.sec === "empresa" && this.dataset.fid === "copiar_de_socio") {
+        if (val === "Não copiar — preencher manualmente") {
+          // Limpa os campos para preenchimento manual
+          ["sede_logradouro","sede_bairro","sede_cidade","sede_cep","sede_uf"].forEach(fid => {
+            setV("empresa", fid, "");
+            const el = document.querySelector(`[data-fid="${fid}"]`);
+            if (el) el.value = "";
+          });
+        } else {
+          // Extrai o índice do "Sócio N"
+          const m = val.match(/Sócio (\d)/);
+          if (m) {
+            const idx = parseInt(m[1]) - 1;
+            if (idx >= nSocios) {
+              alert(`O Sócio ${idx+1} ainda não foi cadastrado. Volte para Dados Pessoais e adicione esse sócio antes, ou escolha outra opção.`);
+              // Desmarca visualmente
+              this.classList.remove("on");
+              setV("empresa", "copiar_de_socio", "");
+              return;
+            }
+            const s = data.socios[idx] || {};
+            const campos = [
+              ["end_logradouro", "sede_logradouro"],
+              ["end_bairro", "sede_bairro"],
+              ["end_cidade", "sede_cidade"],
+              ["end_cep", "sede_cep"],
+              ["end_uf", "sede_uf"],
+            ];
+            let algumPreenchido = false;
+            campos.forEach(([src, dest]) => {
+              const valor = s[src] || "";
+              setV("empresa", dest, valor);
+              const el = document.querySelector(`[data-fid="${dest}"]`);
+              if (el) { el.value = valor; if (valor) algumPreenchido = true; }
+            });
+            if (!algumPreenchido) {
+              alert(`O Sócio ${idx+1} ainda não tem endereço preenchido. Volte para Dados Pessoais e preencha antes.`);
+            }
+          }
+        }
+      }
+    });
+  });
+}
+
+function updateErr(k, el) {
+  const errEl = document.getElementById("fe-" + k);
+  if (!errEl) return;
+  if (errors[k]) {
+    errEl.textContent = "⚠ " + errors[k]; errEl.classList.add("show");
+    if (el && el.classList) { el.classList.add("err"); el.classList.remove("ok"); }
+  } else {
+    errEl.classList.remove("show");
+    if (el && el.classList) { el.classList.remove("err"); const v=getV(el.dataset.sec,el.dataset.fid,+el.dataset.si); if(v&&touched[k]) el.classList.add("ok"); else el.classList.remove("ok"); }
+  }
+}
+
+function updateCond(sec, field, si) {
+  document.querySelectorAll(`[data-cond-field="${field}"][data-cond-sec="${sec}"]`).forEach(fg => {
+    if (si !== undefined && fg.dataset.condSi != si) return;
+    const actual = getV(sec, field, si);
+    fg.classList.toggle("hidden", actual !== fg.dataset.condValue);
+  });
+}
+
+/* ── Boot ──────────────────────────────────────── */
+render();
+</script>
+</body>
+</html>
