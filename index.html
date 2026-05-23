@@ -81,37 +81,35 @@ const Briefcase=p=>Icon({...p,d:[{t:"rect",width:20,height:14,x:2,y:7,rx:2,ry:2}
 */
 
 /* ══ DATA LAYER — troca storage por Supabase sem mudar UI ═════ */
-const PLATFORM_URL = "https://societario-webcontador.netlify.app"; // URL da plataforma
-const SUPABASE_URL = "https://oafeqmekckvojpidizpb.supabase.co";
-const SUPABASE_KEY = "sb_publishable_XEEzhNu9RouZypEyt_kzWg_XdhHo0i-"; // Settings → API → anon public
-const USE_SUPABASE = SUPABASE_KEY !== "COLE_SUA_ANON_KEY_AQUI";
+const PLATFORM_URL = "https://hub-webcontador.netlify.app"; // URL da plataforma
+// ⬇ Chaves removidas do front-end — ficam seguras nas variáveis de ambiente do Netlify
+const USE_SUPABASE = true; // Sempre ativo — proxy cuida da autenticação
 
 const DataLayer = {
+  // Todas as chamadas passam pelo proxy seguro — a chave do Supabase fica no servidor
   async get(key) {
-    if (USE_SUPABASE) {
-      try {
-        const r = await fetch(`${SUPABASE_URL}/rest/v1/wc_kv?key=eq.${key}&select=value`, {
-          headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}`, "Content-Type": "application/json" }
-        });
-        if (r.ok) {
-          const rows = await r.json();
-          if (rows.length > 0) return rows[0].value;
-        }
-      } catch {}
-    }
+    try {
+      const r = await fetch("/.netlify/functions/data-proxy", {
+        method:  "POST",
+        headers: { "Content-Type": "application/json" },
+        body:    JSON.stringify({ action: "get", key }),
+      });
+      if (r.ok) return await r.json();
+    } catch {}
+    // Fallback: localStorage caso o proxy falhe
     try { const v = localStorage.getItem("wc_" + key); return v ? JSON.parse(v) : null; } catch { return null; }
   },
   async set(key, value) {
+    // Salva localmente para resposta imediata na UI
     try { localStorage.setItem("wc_" + key, JSON.stringify(value)); } catch {}
-    if (USE_SUPABASE) {
-      try {
-        await fetch(`${SUPABASE_URL}/rest/v1/wc_kv`, {
-          method: "POST",
-          headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}`, "Content-Type": "application/json", Prefer: "resolution=merge-duplicates" },
-          body: JSON.stringify({ key, value })
-        });
-      } catch {}
-    }
+    // Persiste no Supabase via proxy seguro
+    try {
+      await fetch("/.netlify/functions/data-proxy", {
+        method:  "POST",
+        headers: { "Content-Type": "application/json" },
+        body:    JSON.stringify({ action: "set", key, value }),
+      });
+    } catch {}
   }
 };
 
@@ -1194,10 +1192,12 @@ function App() {
     if (!USE_SUPABASE) return;
     setFormsLoading(true);
     try {
-      const r = await fetch(`${SUPABASE_URL}/rest/v1/form_submissions?status=eq.pending&order=created_at.desc`, {
-        headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}`, "Content-Type": "application/json" }
+      const r = await fetch("/.netlify/functions/data-proxy", {
+        method:  "POST",
+        headers: { "Content-Type": "application/json" },
+        body:    JSON.stringify({ action: "getForms" }),
       });
-      if (r.ok) { const data = await r.json(); setPendingForms(data); }
+      if (r.ok) { const data = await r.json(); setPendingForms(Array.isArray(data) ? data : []); }
     } catch (e) { console.warn("Erro ao buscar formulários:", e); }
     setFormsLoading(false);
   }, []);
@@ -1207,10 +1207,10 @@ function App() {
   const markFormProcessed = async (formId) => {
     if (!USE_SUPABASE) return;
     try {
-      await fetch(`${SUPABASE_URL}/rest/v1/form_submissions?id=eq.${formId}`, {
-        method: "PATCH",
-        headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}`, "Content-Type": "application/json", Prefer: "return=minimal" },
-        body: JSON.stringify({ status: "processed", processed_at: new Date().toISOString(), processed_by: activeUser })
+      await fetch("/.netlify/functions/data-proxy", {
+        method:  "POST",
+        headers: { "Content-Type": "application/json" },
+        body:    JSON.stringify({ action: "updateForm", formId, status: "processed", processedBy: activeUser }),
       });
       setPendingForms(prev => prev.filter(f => f.id !== formId));
     } catch (e) { console.warn("Erro ao marcar formulário:", e); }
