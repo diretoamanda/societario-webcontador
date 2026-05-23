@@ -123,16 +123,20 @@ const USER_META = {
   Yasmin:   { email: "yasmin@webcontador.com.br",        role: "Estagiária",   profile: "estagiario" },
 };
 
-/* ══ CREDENCIAIS ═══════════════════════════════════════════════
-   Admin: 2026 | Demais: 1234 (trocar no 1º acesso)
-   Para trocar: edite aqui ou peça ao Admin.                    */
-const CREDENTIALS = {
-  Amanda:   "2026",
-  Ricardo:  "2026",
-  Sabrina:  "1234",
-  Fernanda: "1234",
-  Gabriela: "1234",
-  Yasmin:   "1234",
+/* ══ CREDENCIAIS — PINs gerenciados nas variáveis de ambiente do Netlify ══
+   Para alterar: Netlify → hub-webcontador → Project configuration → Environment variables
+   Variáveis: PIN_AMANDA, PIN_RICARDO, PIN_SABRINA, PIN_FERNANDA, PIN_GABRIELA, PIN_YASMIN */
+const validatePin = async (usuario, pin) => {
+  try {
+    const r = await fetch("/.netlify/functions/login", {
+      method:  "POST",
+      headers: { "Content-Type": "application/json" },
+      body:    JSON.stringify({ usuario, pin }),
+    });
+    return r.ok;
+  } catch {
+    return false;
+  }
 };
 
 /* ══ HELPERS DE PERMISSÃO ══════════════════════════════════════ */
@@ -340,7 +344,7 @@ function LoginScreen({ onLogin, darkMode, blockedUsers }) {
     if (e.key === "Escape") { setStep("user"); setPin(""); setErro(""); return; }
     if (/^[0-9]$/.test(e.key) && pin.length < 4) {
       const novo = pin + e.key; setPin(novo);
-      if (novo.length === 4) { setTimeout(() => { if (novo === CREDENTIALS[selUser]) { onLogin(selUser); } else { setShake(true); setErro("PIN incorreto."); setPin(""); setTimeout(() => setShake(false), 500); } }, 120); }
+      if (novo.length === 4) { setTimeout(async () => { const ok = await validatePin(selUser, novo); if (ok) { onLogin(selUser); } else { setShake(true); setErro("PIN incorreto."); setPin(""); setTimeout(() => setShake(false), 500); } }, 120); }
     }
   };
 
@@ -350,8 +354,9 @@ function LoginScreen({ onLogin, darkMode, blockedUsers }) {
     const novo = pin + k;
     setPin(novo);
     if (novo.length === 4) {
-      setTimeout(() => {
-        if (novo === CREDENTIALS[selUser]) {
+      setTimeout(async () => {
+        const ok = await validatePin(selUser, novo);
+        if (ok) {
           onLogin(selUser);
         } else {
           setShake(true);

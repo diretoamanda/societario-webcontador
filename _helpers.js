@@ -33,6 +33,7 @@ const PINS = {
   Fernanda: process.env.PIN_FERNANDA,
   Gabriela: process.env.PIN_GABRIELA,
   Yasmin:   process.env.PIN_YASMIN,
+  Ricardo:  process.env.PIN_RICARDO,
 };
 
 // ── Gera token de sessão assinado com HMAC ──
